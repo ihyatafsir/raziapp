@@ -4,25 +4,76 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Outer Octagram Star Accent -->
-    <path
-        android:strokeColor="#10B981"
-        android:strokeWidth="1.5"
-        android:fillColor="#00000000"
-        android:pathData="M54,28 L62,38 L76,38 L70,50 L78,60 L64,64 L54,76 L44,64 L30,60 L38,50 L32,38 L46,38 Z" />
-    
-    <!-- Open Book / Codex Motif in Gold -->
+
+    <!-- Minaret Crescent Finial (Hilal) -->
     <path
         android:fillColor="#D4AF37"
-        android:pathData="M54,44 C48,40 38,40 34,42 L34,68 C38,66 48,66 54,70 C60,66 70,66 74,68 L74,42 C70,40 60,40 54,44 Z" />
-    
-    <!-- Spine Line and Center Ribbon -->
+        android:pathData="M54,12 C52.5,12 51,13 51,15 C51,17.2 52.8,19 55,19 C55.6,19 56.2,18.8 56.8,18.5 C55.5,18 54.5,16.6 54.5,15 C54.5,13.8 55.2,12.7 56.2,12.2 C55.5,12.1 54.8,12 54,12 Z" />
+
+    <!-- Minaret Dome & Spire (Emerald & Gold) -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M54,19 L56.5,25 L51.5,25 Z" />
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M50,25 C50,23 58,23 58,25 L59,31 L49,31 Z" />
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="1"
+        android:pathData="M48,31 L60,31" />
+
+    <!-- Minaret Upper Balcony (Muqarnas / Gallery) -->
+    <path
+        android:fillColor="#0c2e22"
+        android:strokeColor="#10B981"
+        android:strokeWidth="1"
+        android:pathData="M46,31 L62,31 L59,36 L49,36 Z" />
+
+    <!-- Minaret Tower Shaft -->
+    <path
+        android:fillColor="#12161F"
+        android:strokeColor="#10B981"
+        android:strokeWidth="1.2"
+        android:pathData="M49,36 L59,36 L61,64 L47,64 Z" />
+
+    <!-- Arched Minaret Window in Gold -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M52,42 C52,40 56,40 56,42 L56,48 L52,48 Z" />
+
+    <!-- Lower Minaret Balcony -->
+    <path
+        android:fillColor="#0c2e22"
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="1.2"
+        android:pathData="M44,58 L64,58 L62,64 L46,64 Z" />
+
+    <!-- Open Codex / Book in Foreground (Gold & Rich Paper) -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M54,52 C46,47 34,47 28,50 L28,78 C34,75 46,75 54,80 C62,75 74,75 80,78 L80,50 C74,47 62,47 54,52 Z" />
+
+    <!-- Book Inner Page Panels -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M52,55 C46,51 36,51 31,53 L31,75 C36,73 46,73 52,77 Z" />
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M56,55 C62,51 72,51 77,53 L77,75 C72,73 62,73 56,77 Z" />
+
+    <!-- Book Spine Line & Emerald Center Ribbon -->
     <path
         android:strokeColor="#0A0C10"
         android:strokeWidth="1.5"
-        android:pathData="M54,44 L54,70" />
+        android:pathData="M54,52 L54,80" />
     <path
-        android:strokeColor="#F59E0B"
-        android:strokeWidth="1"
-        android:pathData="M38,48 L50,48 M38,54 L50,54 M38,60 L48,60 M58,48 L70,48 M58,54 L70,54 M60,60 L70,60" />
+        android:strokeColor="#10B981"
+        android:strokeWidth="1.2"
+        android:pathData="M54,54 L54,84 L56,82 L58,84 L58,55" />
+
+    <!-- Classical Text Lines -->
+    <path
+        android:strokeColor="#94A3B8"
+        android:strokeWidth="0.8"
+        android:pathData="M34,58 L48,58 M34,63 L48,63 M34,68 L46,68 M60,58 L74,58 M60,63 L74,63 M62,68 L74,68" />
 </vector>

@@ -1355,8 +1355,28 @@ window.selectBook = async function(bookId) {
   }
 
   closeLibraryModal();
+
+  // 1. Try pure client-side EPUB unpack if epub_engine and filename available
+  if (window.clientEpubEngine && (book.asset_url || book.filename)) {
+    const epubUrl = book.asset_url || `epubs/${book.filename}`;
+    try {
+      showToast('Unpacking Classical EPUB in memory...');
+      const loaded = await window.clientEpubEngine.load(epubUrl, bookId);
+      if (loaded && loaded.toc && loaded.toc.length > 0) {
+        state.toc = loaded.toc;
+        renderTocList(state.toc);
+        await loadChapter(state.toc[0].href, 0);
+        showToast(`Loaded: ${book.title}`);
+        return;
+      }
+    } catch (clientErr) {
+      console.warn('Client EPUB engine fallback to offline store / API:', clientErr);
+    }
+  }
+
   await loadBookToc(bookId);
 };
+
 
 // --- Table of Contents (Taqsim) Engine ---
 async function loadBookToc(bookId) {
@@ -1462,18 +1482,32 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
 
   try {
     let data = null;
-    try {
-      const res = await fetchWithTimeout(getApiUrl(`/api/book/${state.activeBookId}/chapter?href=${encodeURIComponent(href)}`), {}, 1500);
-      if (res.ok) {
-        data = await res.json();
-      }
-    } catch (_) {}
 
+    // 1. Try Pure Client-Side EPUB Engine (Primary Standalone Path)
+    if (window.clientEpubEngine && window.clientEpubEngine.currentZip) {
+      try {
+        data = await window.clientEpubEngine.getChapter(href);
+      } catch (e) {
+        console.warn('Client engine chapter extract fallback:', e);
+      }
+    }
+
+    // 2. Try Local Offline Store
     if (!data || !data.paragraphs || data.paragraphs.length === 0) {
       const store = await getOfflineStore();
       if (store && store[state.activeBookId]?.chapters?.[href]) {
         data = store[state.activeBookId].chapters[href];
       }
+    }
+
+    // 3. Try Remote API if connected
+    if (!data || !data.paragraphs || data.paragraphs.length === 0) {
+      try {
+        const res = await fetchWithTimeout(getApiUrl(`/api/book/${state.activeBookId}/chapter?href=${encodeURIComponent(href)}`), {}, 1200);
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (_) {}
     }
 
     if (!data || !data.paragraphs || data.paragraphs.length === 0) {
@@ -1491,7 +1525,7 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
             id: 'p_offline_2',
             type: 'proof',
             arabic_text: 'قَالَ رَحِمَهُ اللَّهُ: وَاعْلَمْ أَنَّ الْعِلْمَ أَشْرَفُ الْغَايَاتِ وَأَسْنَى الْمَقَاصِدِ',
-            text: `Section: ${state.toc[chapterIndex]?.title || 'Epistemic Dialectic'}. For full live neural recitation and DeepSeek Flash AI analysis, connect RaziApp to your desktop server.`
+            text: `Section: ${state.toc[chapterIndex]?.title || 'Epistemic Dialectic'}. Complete standalone edition.`
           }
         ]
       };
@@ -1673,10 +1707,23 @@ async function handleInBookSearch(query) {
   container.innerHTML = '<div class="empty-search-placeholder">Searching codex across all chapters...</div>';
 
   try {
-    const res = await fetch(getApiUrl(`/api/book/${state.activeBookId}/search?q=${encodeURIComponent(query)}&limit=30`));
-    if (!res.ok) throw new Error('Search request failed');
-    const data = await res.json();
-    const results = data.results || [];
+    let results = [];
+
+    // 1. Try pure client-side in-memory search
+    if (window.clientEpubEngine && window.clientEpubEngine.currentZip) {
+      results = await window.clientEpubEngine.search(query, 30);
+    }
+
+    // 2. Try API fallback if client results empty and API available
+    if (results.length === 0) {
+      try {
+        const res = await fetchWithTimeout(getApiUrl(`/api/book/${state.activeBookId}/search?q=${encodeURIComponent(query)}&limit=30`), {}, 1500);
+        if (res.ok) {
+          const data = await res.json();
+          results = data.results || [];
+        }
+      } catch (_) {}
+    }
 
     if (results.length === 0) {
       container.innerHTML = `<div class="empty-search-placeholder">No occurrences of "${escapeHtml(query)}" found in this volume.</div>`;
@@ -1685,10 +1732,11 @@ async function handleInBookSearch(query) {
 
     container.innerHTML = results.map(r => {
       const qRegex = new RegExp(`(${escapeRegex(query)})`, 'gi');
-      const highlightedSnippet = escapeHtml(r.snippet).replace(qRegex, '<mark>$1</mark>');
+      const snippetText = r.snippet || r.text || '';
+      const highlightedSnippet = escapeHtml(snippetText).replace(qRegex, '<mark>$1</mark>');
       return `
         <div class="search-result-card" onclick="jumpToSearchResult('${r.chapter_href}', '${r.paragraph_id}')">
-          <div class="search-result-chap">${escapeHtml(r.chapter_title)}</div>
+          <div class="search-result-chap">${escapeHtml(r.chapter_title || 'Section')}</div>
           <div class="search-result-snippet">${highlightedSnippet}</div>
         </div>
       `;
@@ -1732,45 +1780,79 @@ window.reciteArabicParagraph = async function(idx) {
   const paras = state.chapterData?.paragraphs;
   if (!paras || !paras[idx]) return;
 
-  const arabicText = paras[idx].arabic || paras[idx].text;
+  const arabicText = paras[idx].arabic_text || paras[idx].arabic || paras[idx].text;
   if (!arabicText || arabicText.trim().length === 0) return;
 
   const audio = document.getElementById('core-audio-player');
   const dock = document.getElementById('arabic-audio-dock');
   const wave = document.getElementById('audio-wave-animation');
   const statusEl = document.getElementById('audio-reciter-status');
-  if (!audio || !dock) return;
+  if (dock) dock.classList.add('active');
 
-  dock.classList.add('active');
+  // 1. Try Web Speech API for instant client-side offline recitation
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(arabicText);
+      utterance.lang = 'ar-SA';
+      utterance.rate = 0.88;
+
+      const voices = window.speechSynthesis.getVoices();
+      const arVoice = voices.find(v => v.lang && v.lang.startsWith('ar'));
+      if (arVoice) utterance.voice = arVoice;
+
+      utterance.onstart = () => {
+        state.isPlayingArabic = true;
+        if (wave) wave.classList.add('active');
+        if (statusEl) statusEl.textContent = 'Reciting Classical Arabic Text (Offline Engine)';
+        updateArabicPlayIcon(true);
+      };
+
+      utterance.onend = () => {
+        stopArabicAudio();
+      };
+
+      utterance.onerror = () => {
+        stopArabicAudio();
+      };
+
+      window.speechSynthesis.speak(utterance);
+      return;
+    } catch (_) {}
+  }
+
+  // 2. Fallback to server synthesis
   if (statusEl) statusEl.textContent = 'Synthesizing Arabic Vocalization...';
 
   try {
-    const res = await fetch(getApiUrl('/api/tts/synthesize'), {
+    const res = await fetchWithTimeout(getApiUrl('/api/tts/synthesize'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: arabicText,
         voice: 'classical_arabic'
       })
-    });
+    }, 2500);
 
     if (!res.ok) throw new Error('Arabic synthesis failed');
     const data = await res.json();
 
-    audio.src = data.audio_url;
-    audio.play().then(() => {
-      state.isPlayingArabic = true;
-      if (wave) wave.classList.add('active');
-      if (statusEl) statusEl.textContent = 'Reciting Classical Arabic Text';
-      updateArabicPlayIcon(true);
-    }).catch(e => {
-      console.error('Audio play failure:', e);
-      stopArabicAudio();
-    });
+    if (audio) {
+      audio.src = data.audio_url;
+      audio.play().then(() => {
+        state.isPlayingArabic = true;
+        if (wave) wave.classList.add('active');
+        if (statusEl) statusEl.textContent = 'Reciting Classical Arabic Text';
+        updateArabicPlayIcon(true);
+      }).catch(e => {
+        console.error('Audio play failure:', e);
+        stopArabicAudio();
+      });
+    }
   } catch (err) {
     console.error('TTS error:', err);
     stopArabicAudio();
-    showToast('Arabic recitation synthesis unavailable');
+    showToast('Arabic recitation unavailable');
   }
 };
 
@@ -1780,6 +1862,7 @@ function toggleArabicAudio() {
   if (!audio) return;
 
   if (state.isPlayingArabic) {
+    if ('speechSynthesis' in window) window.speechSynthesis.pause();
     audio.pause();
     state.isPlayingArabic = false;
     if (wave) wave.classList.remove('active');
@@ -1794,6 +1877,9 @@ function toggleArabicAudio() {
 }
 
 function stopArabicAudio() {
+  if ('speechSynthesis' in window) {
+    try { window.speechSynthesis.cancel(); } catch (_) {}
+  }
   const audio = document.getElementById('core-audio-player');
   const dock = document.getElementById('arabic-audio-dock');
   const wave = document.getElementById('audio-wave-animation');
@@ -1806,6 +1892,7 @@ function stopArabicAudio() {
   if (dock) dock.classList.remove('active');
   updateArabicPlayIcon(false);
 }
+
 
 function updateArabicPlayIcon(isPlaying) {
   const btn = document.getElementById('btn-audio-play-pause');

@@ -39,4 +39,6 @@ local.properties
 **/build/
 *.apk
 *.aab
+android/app/src/main/assets/epubs/
+
 

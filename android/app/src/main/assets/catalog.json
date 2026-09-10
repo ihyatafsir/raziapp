@@ -29,7 +29,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_complete_en.epub"
   },
   {
     "id": "codex_2",
@@ -61,7 +62,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ismat_anbiya_v5_complete_en.epub"
   },
   {
     "id": "codex_3",
@@ -93,7 +95,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_complete_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_4",
@@ -125,7 +128,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/razi_arbain_pure_en.epub"
   },
   {
     "id": "codex_5",
@@ -157,7 +161,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/lawami_v2_guided_en.epub"
   },
   {
     "id": "codex_6",
@@ -189,7 +194,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/qada_qadar_v2_guided_en.epub"
   },
   {
     "id": "codex_7",
@@ -221,7 +227,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_07_v2_pure_en.epub"
   },
   {
     "id": "codex_8",
@@ -253,7 +260,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_09_v2_pure_en.epub"
   },
   {
     "id": "codex_9",
@@ -285,7 +293,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_01_v2_pure_en.epub"
   },
   {
     "id": "codex_10",
@@ -317,7 +326,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_04_v2_pure_en.epub"
   },
   {
     "id": "codex_11",
@@ -349,7 +359,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_03_v2_pure_en.epub"
   },
   {
     "id": "codex_12",
@@ -381,7 +392,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/asas_v2_guided_en.epub"
   },
   {
     "id": "codex_13",
@@ -413,7 +425,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/macalim_v2_guided_en.epub"
   },
   {
     "id": "codex_14",
@@ -445,7 +458,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_06_v2_pure_en.epub"
   },
   {
     "id": "codex_15",
@@ -477,7 +491,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_08_v2_pure_en.epub"
   },
   {
     "id": "codex_16",
@@ -509,7 +524,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_05_v2_pure_en.epub"
   },
   {
     "id": "codex_17",
@@ -541,7 +557,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_02_v2_pure_en.epub"
   },
   {
     "id": "codex_18",
@@ -573,7 +590,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_07_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_19",
@@ -605,7 +623,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_09_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_20",
@@ -637,7 +656,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_04_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_21",
@@ -669,7 +689,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/lawami_al_bayyinat_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_22",
@@ -701,7 +722,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_01_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_23",
@@ -733,7 +755,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_03_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_24",
@@ -765,7 +788,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_06_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_25",
@@ -797,7 +821,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/asas_al_taqdis_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_26",
@@ -829,7 +854,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_08_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_27",
@@ -861,7 +887,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/macalim_usul_al_din_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_28",
@@ -893,7 +920,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_05_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_29",
@@ -925,7 +953,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_matalib_al_aliyah_vol_02_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_30",
@@ -957,7 +986,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ismat_anbiya_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_31",
@@ -989,7 +1019,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/itiqadat_firaq_al_muslimin_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_32",
@@ -1021,7 +1052,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mahsul_fi_usul_al_fiqh_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_33",
@@ -1053,7 +1085,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/razi_mahsul_pure_en.epub"
   },
   {
     "id": "codex_34",
@@ -1085,7 +1118,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/razi_tafsir_kabir_pure_en.epub"
   },
   {
     "id": "codex_35",
@@ -1117,7 +1151,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/razi_tafsir_kabir_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_36",
@@ -1149,7 +1184,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_11_en.epub"
   },
   {
     "id": "codex_37",
@@ -1181,7 +1217,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_29_en.epub"
   },
   {
     "id": "codex_38",
@@ -1213,7 +1250,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_09_en.epub"
   },
   {
     "id": "codex_39",
@@ -1245,7 +1283,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_21_en.epub"
   },
   {
     "id": "codex_40",
@@ -1277,7 +1316,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_22_en.epub"
   },
   {
     "id": "codex_41",
@@ -1309,7 +1349,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_24_en.epub"
   },
   {
     "id": "codex_42",
@@ -1341,7 +1382,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_12_en.epub"
   },
   {
     "id": "codex_43",
@@ -1373,7 +1415,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_20_en.epub"
   },
   {
     "id": "codex_44",
@@ -1405,7 +1448,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_23_en.epub"
   },
   {
     "id": "codex_45",
@@ -1437,7 +1481,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_28_en.epub"
   },
   {
     "id": "codex_46",
@@ -1469,7 +1514,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_04_en.epub"
   },
   {
     "id": "codex_47",
@@ -1501,7 +1547,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_06_en.epub"
   },
   {
     "id": "codex_48",
@@ -1533,7 +1580,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_30_en.epub"
   },
   {
     "id": "codex_49",
@@ -1565,7 +1613,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_31_en.epub"
   },
   {
     "id": "codex_50",
@@ -1597,7 +1646,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_32_en.epub"
   },
   {
     "id": "codex_51",
@@ -1629,7 +1679,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_10_en.epub"
   },
   {
     "id": "codex_52",
@@ -1661,7 +1712,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_17_en.epub"
   },
   {
     "id": "codex_53",
@@ -1693,7 +1745,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_25_en.epub"
   },
   {
     "id": "codex_54",
@@ -1725,7 +1778,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_27_en.epub"
   },
   {
     "id": "codex_55",
@@ -1757,7 +1811,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_05_en.epub"
   },
   {
     "id": "codex_56",
@@ -1789,7 +1844,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_08_en.epub"
   },
   {
     "id": "codex_57",
@@ -1821,7 +1877,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_18_en.epub"
   },
   {
     "id": "codex_58",
@@ -1853,7 +1910,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_19_en.epub"
   },
   {
     "id": "codex_59",
@@ -1885,7 +1943,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_01_en.epub"
   },
   {
     "id": "codex_60",
@@ -1917,7 +1976,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_03_en.epub"
   },
   {
     "id": "codex_61",
@@ -1949,7 +2009,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_07_en.epub"
   },
   {
     "id": "codex_62",
@@ -1981,7 +2042,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_14_en.epub"
   },
   {
     "id": "codex_63",
@@ -2013,7 +2075,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_15_en.epub"
   },
   {
     "id": "codex_64",
@@ -2045,7 +2108,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_16_en.epub"
   },
   {
     "id": "codex_65",
@@ -2077,7 +2141,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_02_en.epub"
   },
   {
     "id": "codex_66",
@@ -2109,7 +2174,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_26_en.epub"
   },
   {
     "id": "codex_67",
@@ -2141,7 +2207,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsir_kabir_v2_vol_13_en.epub"
   },
   {
     "id": "codex_68",
@@ -2173,7 +2240,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/razi_asrar_tanzil_pure_en.epub"
   },
   {
     "id": "codex_69",
@@ -2205,7 +2273,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/razi_asrar_tanzil_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_70",
@@ -2237,7 +2306,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tahafut_al_falasifa_complete_76sections_pure_en.epub"
   },
   {
     "id": "codex_71",
@@ -2269,7 +2339,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tahafut_al_falasifa_complete_76sections_bilingual_en.epub"
   },
   {
     "id": "codex_72",
@@ -2301,7 +2372,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/fadaih_al_batiniyya_pure_en.epub"
   },
   {
     "id": "codex_73",
@@ -2333,7 +2405,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_iqtisad_fi_al_itiqad_pure_en.epub"
   },
   {
     "id": "codex_74",
@@ -2365,7 +2438,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_maqsad_al_asna_pure_en.epub"
   },
   {
     "id": "codex_75",
@@ -2397,7 +2471,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/qawaid_al_aqaid_pure_en.epub"
   },
   {
     "id": "codex_76",
@@ -2429,7 +2504,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_iqtisad_fi_al_itiqad_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_77",
@@ -2461,7 +2537,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/fadaih_al_batiniyya_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_78",
@@ -2493,7 +2570,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_maqsad_al_asna_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_79",
@@ -2525,7 +2603,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/qawaid_al_aqaid_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_80",
@@ -2557,7 +2636,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mustasfa_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_81",
@@ -2589,7 +2669,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mustasfa_pure_en.epub"
   },
   {
     "id": "codex_82",
@@ -2621,7 +2702,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/shifa_al_ghalil_pure_en.epub"
   },
   {
     "id": "codex_83",
@@ -2653,7 +2735,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mankhul_pure_en.epub"
   },
   {
     "id": "codex_84",
@@ -2685,7 +2768,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/shifa_al_ghalil_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_85",
@@ -2717,7 +2801,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mankhul_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_86",
@@ -2749,7 +2834,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ihya_ulum_al_din_pure_en.epub"
   },
   {
     "id": "codex_87",
@@ -2781,7 +2867,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ihya_ulum_al_din_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_88",
@@ -2813,7 +2900,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ihya_ulum_al_din_vol_04_munjiyat_en.epub"
   },
   {
     "id": "codex_89",
@@ -2845,7 +2933,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ihya_ulum_al_din_vol_03_muhlikat_en.epub"
   },
   {
     "id": "codex_90",
@@ -2877,7 +2966,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ihya_ulum_al_din_vol_02_adat_en.epub"
   },
   {
     "id": "codex_91",
@@ -2909,7 +2999,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/ihya_ulum_al_din_vol_01_ibadat_en.epub"
   },
   {
     "id": "codex_92",
@@ -2941,7 +3032,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/maarij_al_quds_pure_en.epub"
   },
   {
     "id": "codex_93",
@@ -2973,7 +3065,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/sirr_al_alamin_pure_en.epub"
   },
   {
     "id": "codex_94",
@@ -3005,7 +3098,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/mishkat_al_anwar_pure_en.epub"
   },
   {
     "id": "codex_95",
@@ -3037,7 +3131,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/bidayat_al_hidayah_pure_en.epub"
   },
   {
     "id": "codex_96",
@@ -3069,7 +3164,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_munqidh_min_al_dalal_pure_en.epub"
   },
   {
     "id": "codex_97",
@@ -3101,7 +3197,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/asnaf_al_maghrurin_pure_en.epub"
   },
   {
     "id": "codex_98",
@@ -3133,7 +3230,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/kimiya_yi_saadat_pure_en.epub"
   },
   {
     "id": "codex_99",
@@ -3165,7 +3263,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/maarij_al_quds_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_100",
@@ -3197,7 +3296,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/sirr_al_alamin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_101",
@@ -3229,7 +3329,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/mishkat_al_anwar_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_102",
@@ -3261,7 +3362,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/bidayat_al_hidayah_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_103",
@@ -3293,7 +3395,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_munqidh_min_al_dalal_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_104",
@@ -3325,7 +3428,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/asnaf_al_maghrurin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_105",
@@ -3357,7 +3461,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/kimiya_yi_saadat_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_106",
@@ -3389,7 +3494,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/maqasid_al_falasifah_pure_en.epub"
   },
   {
     "id": "codex_107",
@@ -3421,7 +3527,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/miyar_al_ilm_pure_en.epub"
   },
   {
     "id": "codex_108",
@@ -3453,7 +3560,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/mizan_al_amal_pure_en.epub"
   },
   {
     "id": "codex_109",
@@ -3485,7 +3593,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/maqasid_al_falasifah_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_110",
@@ -3517,7 +3626,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/miyar_al_ilm_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_111",
@@ -3549,7 +3659,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/mizan_al_amal_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_112",
@@ -3581,7 +3692,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/majmuat_rasail_al_ghazali_pure_en.epub"
   },
   {
     "id": "codex_113",
@@ -3613,7 +3725,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/majmuat_rasail_al_ghazali_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_114",
@@ -3645,7 +3758,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/adab_al_fatwa_wa_al_mufti_pure_en.epub"
   },
   {
     "id": "codex_115",
@@ -3677,7 +3791,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/adab_al_fatwa_wa_al_mufti_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_116",
@@ -3709,7 +3824,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/sharh_sahih_muslim_pure_en.epub"
   },
   {
     "id": "codex_117",
@@ -3741,7 +3857,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/sharh_sahih_muslim_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_118",
@@ -3773,7 +3890,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/riyad_al_salihin_pure_en.epub"
   },
   {
     "id": "codex_119",
@@ -3805,7 +3923,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/khulasat_al_ahkam_pure_en.epub"
   },
   {
     "id": "codex_120",
@@ -3837,7 +3956,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/irshad_tullab_al_haqaiq_pure_en.epub"
   },
   {
     "id": "codex_121",
@@ -3869,7 +3989,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_ijaz_fi_sharh_sunan_abi_dawud_pure_en.epub"
   },
   {
     "id": "codex_122",
@@ -3901,7 +4022,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_arbaun_al_nawawiyya_pure_en.epub"
   },
   {
     "id": "codex_123",
@@ -3933,7 +4055,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/riyad_al_salihin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_124",
@@ -3965,7 +4088,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/khulasat_al_ahkam_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_125",
@@ -3997,7 +4121,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/irshad_tullab_al_haqaiq_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_126",
@@ -4029,7 +4154,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_ijaz_fi_sharh_sunan_abi_dawud_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_127",
@@ -4061,7 +4187,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_arbaun_al_nawawiyya_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_128",
@@ -4093,7 +4220,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tahdhib_al_asma_wa_al_lughat_pure_en.epub"
   },
   {
     "id": "codex_129",
@@ -4125,7 +4253,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tahdhib_al_asma_wa_al_lughat_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_130",
@@ -4157,7 +4286,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tahrir_alfaz_al_tanbih_pure_en.epub"
   },
   {
     "id": "codex_131",
@@ -4189,7 +4319,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tahrir_alfaz_al_tanbih_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_132",
@@ -4221,7 +4352,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/kitab_al_adhkar_pure_en.epub"
   },
   {
     "id": "codex_133",
@@ -4253,7 +4385,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_tibyan_fi_adab_hamalat_al_quran_pure_en.epub"
   },
   {
     "id": "codex_134",
@@ -4285,7 +4418,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/adab_ikhtilat_al_nas_pure_en.epub"
   },
   {
     "id": "codex_135",
@@ -4317,7 +4451,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/bustan_al_arifin_pure_en.epub"
   },
   {
     "id": "codex_136",
@@ -4349,7 +4484,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/kitab_al_adhkar_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_137",
@@ -4381,7 +4517,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_tibyan_fi_adab_hamalat_al_quran_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_138",
@@ -4413,7 +4550,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/adab_ikhtilat_al_nas_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_139",
@@ -4445,7 +4583,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/bustan_al_arifin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_140",
@@ -4477,7 +4616,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/rawdat_al_talibin_pure_en.epub"
   },
   {
     "id": "codex_141",
@@ -4509,7 +4649,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/rawdat_al_talibin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_142",
@@ -4541,7 +4682,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_majmu_sharh_al_muhadhdhab_pure_en.epub"
   },
   {
     "id": "codex_143",
@@ -4573,7 +4715,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/minhaj_al_talibin_pure_en.epub"
   },
   {
     "id": "codex_144",
@@ -4605,7 +4748,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_idah_fi_manasik_al_hajj_pure_en.epub"
   },
   {
     "id": "codex_145",
@@ -4637,7 +4781,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_masail_al_manthurah_pure_en.epub"
   },
   {
     "id": "codex_146",
@@ -4669,7 +4814,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/daqaiq_al_minhaj_pure_en.epub"
   },
   {
     "id": "codex_147",
@@ -4701,7 +4847,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_majmu_sharh_al_muhadhdhab_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_148",
@@ -4733,7 +4880,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/minhaj_al_talibin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_149",
@@ -4765,7 +4913,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_idah_fi_manasik_al_hajj_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_150",
@@ -4797,7 +4946,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_masail_al_manthurah_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_151",
@@ -4829,7 +4979,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/daqaiq_al_minhaj_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_152",
@@ -4861,7 +5012,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/muhadarat_al_udaba_pure_en.epub"
   },
   {
     "id": "codex_153",
@@ -4893,7 +5045,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/muhadarat_al_udaba_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_154",
@@ -4925,7 +5078,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mufradat_fi_gharib_al_quran_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_155",
@@ -4957,7 +5111,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_mufradat_fi_gharib_al_quran_pure_en.epub"
   },
   {
     "id": "codex_156",
@@ -4989,7 +5144,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_dhariah_ila_makarim_al_shariah_pure_en.epub"
   },
   {
     "id": "codex_157",
@@ -5021,7 +5177,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsil_al_nashatayn_pure_en.epub"
   },
   {
     "id": "codex_158",
@@ -5053,7 +5210,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_dhariah_ila_makarim_al_shariah_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_159",
@@ -5085,7 +5243,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/tafsil_al_nashatayn_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_160",
@@ -5117,7 +5276,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/footnoteless_book.epub"
   },
   {
     "id": "codex_161",
@@ -5149,7 +5309,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_tibr_al_masbuk_pure_en.epub"
   },
   {
     "id": "codex_162",
@@ -5181,7 +5342,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/itiqadat_v2_guided_en.epub"
   },
   {
     "id": "codex_163",
@@ -5213,7 +5375,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_taqrib_wa_al_taysir_pure_en.epub"
   },
   {
     "id": "codex_164",
@@ -5245,7 +5408,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_radd_al_jamil_pure_en.epub"
   },
   {
     "id": "codex_165",
@@ -5277,7 +5441,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/risalah_fi_al_itiqad_pure_en.epub"
   },
   {
     "id": "codex_166",
@@ -5309,7 +5474,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_usul_wa_al_dawabit_pure_en.epub"
   },
   {
     "id": "codex_167",
@@ -5341,7 +5507,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/arbain_fi_usul_al_din_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_168",
@@ -5373,7 +5540,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/bilingual_book.epub"
   },
   {
     "id": "codex_169",
@@ -5405,7 +5573,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_qada_wal_qadar_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_170",
@@ -5437,7 +5606,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_tibr_al_masbuk_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_171",
@@ -5469,7 +5639,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_taqrib_wa_al_taysir_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_172",
@@ -5501,7 +5672,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_radd_al_jamil_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_173",
@@ -5533,7 +5705,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/risalah_fi_al_itiqad_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_174",
@@ -5565,7 +5738,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_usul_wa_al_dawabit_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_175",
@@ -5597,7 +5771,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/jami_al_tafsir_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_176",
@@ -5629,7 +5804,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/jami_al_tafsir_pure_en.epub"
   },
   {
     "id": "codex_177",
@@ -5661,7 +5837,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/jawahir_al_quran_pure_en.epub"
   },
   {
     "id": "codex_178",
@@ -5693,7 +5870,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/jawahir_al_quran_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_179",
@@ -5725,7 +5903,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/asrar_al_tanzil_v3_ar_lex_en.epub"
   },
   {
     "id": "codex_180",
@@ -5757,7 +5936,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/al_futuhat_al_makkiyya_en.epub"
   },
   {
     "id": "codex_181",
@@ -5789,7 +5969,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/sunan_al_muhtadin_oversight_critical_en.epub"
   },
   {
     "id": "codex_182",
@@ -5821,7 +6002,8 @@
     "is_pure_en": false,
     "is_bilingual": false,
     "is_sq": true,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/al_futuhat_al_makkiyya_sq.epub"
   },
   {
     "id": "codex_183",
@@ -5853,7 +6035,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/al_shifa_qadi_iyad_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_184",
@@ -5885,7 +6068,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/al_shifa_qadi_iyad_pure_en.epub"
   },
   {
     "id": "codex_185",
@@ -5917,7 +6101,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/minhaj_al_abidin_pure_en.epub"
   },
   {
     "id": "codex_186",
@@ -5949,7 +6134,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/takhmis_al_ghanima_pure_en.epub"
   },
   {
     "id": "codex_187",
@@ -5981,7 +6167,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/sunan_al_muhtadin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_188",
@@ -6013,7 +6200,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/minhaj_al_abidin_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_189",
@@ -6045,7 +6233,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": true
+    "is_heritage_new": true,
+    "asset_url": "epubs/takhmis_al_ghanima_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_190",
@@ -6077,7 +6266,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/mihakk_al_nazar_pure_en.epub"
   },
   {
     "id": "codex_191",
@@ -6109,7 +6299,8 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/mihakk_al_nazar_bilingual_lexical_en.epub"
   },
   {
     "id": "codex_192",
@@ -6141,7 +6332,8 @@
     "is_pure_en": true,
     "is_bilingual": false,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_wasit_pure_en.epub"
   },
   {
     "id": "codex_193",
@@ -6173,6 +6365,7 @@
     "is_pure_en": false,
     "is_bilingual": true,
     "is_sq": false,
-    "is_heritage_new": false
+    "is_heritage_new": false,
+    "asset_url": "epubs/al_wasit_bilingual_lexical_en.epub"
   }
 ]
