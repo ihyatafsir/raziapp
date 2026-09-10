@@ -229,6 +229,113 @@ BOOK_TITLES_MAP = {
     "muhadarat_al_udaba": ("Lectures of the Literati (Muhadarat al-Udaba')", "مُحَاضَرَات الأُدَبَاء وَمُحَاوَرَات الشُّعَرَاء وَالبُلَغَاء", "lisan")
 }
 
+def get_work_slug(fname: str) -> str:
+    s = fname.replace(".epub", "")
+    vol_match = re.search(r'(?:vol|volume)[_-]?(\d+)', s, re.I)
+    vol_suffix = f"_vol_{int(vol_match.group(1)):02d}" if vol_match else ""
+    
+    if "tafsir_kabir" in s:
+        if vol_match: return f"tafsir_kabir{vol_suffix}"
+        return "tafsir_kabir_omnibus"
+    elif "matalib" in s:
+        if "complete" in s or "omnibus" in s or not vol_match: return "matalib_omnibus"
+        return f"matalib{vol_suffix}"
+    elif "ihya" in s:
+        if vol_match: return f"ihya{vol_suffix}"
+        return "ihya_omnibus"
+    elif "ismat" in s: return "ismat_anbiya"
+    elif "asas" in s: return "asas_taqdis"
+    elif "lawami" in s: return "lawami_bayyinat"
+    elif "qada_qadar" in s or "qada_wal_qadar" in s: return "qada_qadar"
+    elif "mahsul" in s: return "mahsul"
+    elif "macalim" in s: return "macalim_usul_aldin"
+    elif "itiqadat" in s: return "itiqadat_firaq"
+    elif "asrar_tanzil" in s: return "asrar_tanzil"
+    elif "tahafut" in s: return "tahafut_al_falasifa"
+    elif "mustasfa" in s: return "mustasfa"
+    elif "mankhul" in s: return "mankhul"
+    elif "shifa_al_ghalil" in s: return "shifa_al_ghalil"
+    elif "iqtisad" in s: return "iqtisad"
+    elif "maqsad" in s: return "maqsad"
+    elif "mishkat" in s: return "mishkat"
+    elif "munqidh" in s: return "munqidh"
+    elif "bidayat" in s: return "bidayat"
+    elif "minhaj_al_abidin" in s: return "minhaj_al_abidin"
+    elif "miyar" in s: return "miyar_al_ilm"
+    elif "mizan" in s: return "mizan_al_amal"
+    elif "mihakk" in s: return "mihakk_al_nazar"
+    elif "maqasid" in s: return "maqasid_al_falasifah"
+    elif "fadaih" in s: return "fadaih_al_batiniyya"
+    elif "jawahir" in s: return "jawahir_al_quran"
+    elif "qawaid" in s: return "qawaid_al_aqaid"
+    elif "wasit" in s: return "al_wasit"
+    elif "kimiya" in s: return "kimiya_yi_saadat"
+    elif "maarij" in s: return "maarij_al_quds"
+    elif "sirr_al_alamin" in s: return "sirr_al_alamin"
+    elif "asnaf" in s: return "asnaf_al_maghrurin"
+    elif "radd_al_jamil" in s: return "al_radd_al_jamil"
+    elif "rawdat" in s: return "rawdat_al_talibin"
+    elif "majmu" in s and "sharh" in s: return "al_majmu_nawawi"
+    elif "majmuat_rasail" in s: return "majmuat_rasail_ghazali"
+    elif "minhaj_al_talibin" in s: return "minhaj_al_talibin"
+    elif "sahih_muslim" in s: return "sharh_sahih_muslim"
+    elif "riyad" in s: return "riyad_al_salihin"
+    elif "arbaun" in s or "arbain" in s:
+        if "nawawi" in s: return "arbaun_nawawi"
+        return "arbain_razi"
+    elif "adab_al_fatwa" in s: return "adab_al_fatwa"
+    elif "tibyan" in s: return "al_tibyan"
+    elif "adhkar" in s: return "kitab_al_adhkar"
+    elif "tahdhib" in s: return "tahdhib_al_asma"
+    elif "tahrir" in s: return "tahrir_alfaz_al_tanbih"
+    elif "idah" in s: return "al_idah_manasik"
+    elif "ijaz" in s: return "al_ijaz_sunan_abi_dawud"
+    elif "adab_ikhtilat" in s: return "adab_ikhtilat_al_nas"
+    elif "khulasat" in s: return "khulasat_al_ahkam"
+    elif "irshad_tullab" in s: return "irshad_tullab_al_haqaiq"
+    elif "bustan" in s: return "bustan_al_arifin"
+    elif "daqaiq" in s: return "daqaiq_al_minhaj"
+    elif "masail_al_manthurah" in s: return "al_masail_al_manthurah"
+    elif "mufradat" in s: return "al_mufradat"
+    elif "dhariah" in s: return "al_dhariah"
+    elif "tafsil" in s: return "tafsil_al_nashatayn"
+    elif "muhadarat" in s: return "muhadarat_al_udaba"
+    elif "futuhat" in s: return "al_futuhat_al_makkiyya"
+    elif "shifa" in s and ("qadi" in s or "iyad" in s): return "al_shifa_qadi_iyad"
+    elif "sunan_al_muhtadin" in s or "sanan" in s or "senan" in s: return "sunan_al_muhtadin"
+    elif "takhmis" in s: return "takhmis_al_ghanima"
+    elif "jami_al_tafsir" in s: return "jami_al_tafsir"
+    elif "tibr" in s: return "al_tibr_al_masbuk"
+    elif "taqrib" in s: return "al_taqrib_wa_al_taysir"
+    elif "risalah_fi_al_itiqad" in s: return "risalah_fi_al_itiqad"
+    elif "usul_wa_al_dawabit" in s: return "al_usul_wa_al_dawabit"
+    return s
+
+def version_score(b: Dict[str, Any]) -> int:
+    fname = b.get("filename", "")
+    score = 0
+    if "v5" in fname or "zero_truncation" in fname or "complete_76sections" in fname:
+        score += 500
+    elif "v4" in fname or "7roots" in fname:
+        score += 400
+    elif "v3" in fname or "ar_lex" in fname:
+        score += 300
+    elif "v2" in fname:
+        score += 200
+    elif "guided" in fname:
+        score += 150
+    else:
+        score += 100
+        
+    if "bilingual_lexical_en" in fname: score += 80
+    elif "pure_en" in fname: score += 70
+    elif "oversight_critical" in fname: score += 90
+    elif "complete" in fname: score += 60
+    
+    if fname in ["sanan.epub", "senan2.epub", "senanebook.epub", "footnoteless_book.epub", "bilingual_book.epub"]:
+        score -= 300
+    return score
+
 def setup_corpus() -> List[Dict[str, Any]]:
     TARGET_EPUBS_DIR.mkdir(parents=True, exist_ok=True)
     if not SOURCE_EPUBS_DIR.exists():
@@ -361,6 +468,7 @@ def setup_corpus() -> List[Dict[str, Any]]:
             "filename": fname,
             "path": str(target_link),
             "size_mb": size_mb,
+            "work_slug": get_work_slug(fname),
             # Imam & Author
             "imam_key": imam_key,
             "author_key": imam_key,
@@ -392,6 +500,43 @@ def setup_corpus() -> List[Dict[str, Any]]:
         }
         books.append(book_info)
 
+    # Filter: Select strictly the two latest / highest quality versions of each work
+    work_groups = {}
+    for b in books:
+        slug = b["work_slug"]
+        if slug not in work_groups:
+            work_groups[slug] = []
+        work_groups[slug].append(b)
+
+    filtered_books = []
+    for slug, group in work_groups.items():
+        # Separate pure english and bilingual lexical candidates
+        pure_cands = [b for b in group if b["is_pure_en"]]
+        bilingual_cands = [b for b in group if b["is_bilingual"]]
+        sq_cands = [b for b in group if b["is_sq"]]
+
+        pure_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
+        bilingual_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
+        sq_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
+
+        chosen = []
+        if pure_cands:
+            chosen.append(pure_cands[0])
+        if bilingual_cands:
+            chosen.append(bilingual_cands[0])
+
+        if len(chosen) < 2:
+            group.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
+            for b in group:
+                if b not in chosen and version_score(b) > 0:
+                    chosen.append(b)
+                    if len(chosen) == 2:
+                        break
+
+        filtered_books.extend(chosen[:2])
+
+    books = filtered_books
+
     # Hierarchical Sorting:
     # 1. Imam Order (Razi, Ghazali, Nawawi, Raghib, Heritage)
     # 2. Topic Order (Kalam, Usul, Tafsir, Hadith, Lisan, Tasawwuf, Hikmah, Fiqh)
@@ -420,6 +565,7 @@ def setup_corpus() -> List[Dict[str, Any]]:
     v4_count = len([b for b in books if b["version"] == "v4"])
     pure_count = len([b for b in books if b["is_pure_en"]])
     bilingual_count = len([b for b in books if b["is_bilingual"]])
+    sq_count = len([b for b in books if b["is_sq"]])
 
     catalog_data = {
         "imams": IMAMS_MAP,
@@ -429,11 +575,12 @@ def setup_corpus() -> List[Dict[str, Any]]:
         "v4_total": v4_count,
         "pure_en_total": pure_count,
         "bilingual_total": bilingual_count,
+        "sq_total": sq_count,
         "books": books
     }
 
     CATALOG_PATH.write_text(json.dumps(books, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"Catalog generated: {len(books)} masterworks ({v5_count} v5, {v4_count} v4, {pure_count} Pure English, {bilingual_count} Bilingual) -> {CATALOG_PATH}")
+    print(f"Catalog generated: {len(books)} curated masterworks ({v5_count} v5, {v4_count} v4, {pure_count} Pure English, {bilingual_count} Bilingual, {sq_count} Albanian) -> {CATALOG_PATH}")
     return books
 
 if __name__ == "__main__":
