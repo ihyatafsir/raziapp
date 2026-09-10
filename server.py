@@ -316,7 +316,25 @@ def get_available_voices():
     """Returns available scholarly voice profiles."""
     return TtsEngine.get_voice_profiles()
 
+@app.get("/download/apk")
+@app.head("/download/apk")
+@app.get("/api/download/apk")
+@app.head("/api/download/apk")
+def download_android_apk():
+    """Serves the compiled RaziApp Android APK package."""
+    apk_path = BASE_DIR / "raziapp-v2.3.0.apk"
+    if not apk_path.exists():
+        apk_path = BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+    if not apk_path.exists():
+        raise HTTPException(status_code=404, detail="APK binary not found.")
+    return FileResponse(
+        path=str(apk_path),
+        filename="raziapp-v2.3.0.apk",
+        media_type="application/vnd.android.package-archive"
+    )
+
 # Mount Frontend
+
 PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
 
