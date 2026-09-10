@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="nocturne">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>RaziApp Mobile | نِظَامُ الرَّازِي لِلْمُطَالَعَةِ وَالتَّحْقِيق</title>
+  <meta name="description" content="Mobile-Only Sovereign Interactive EPUB Reader with Side Page Wipe grounded in Imam Fakhr al-Din al-Razi's Jami' al-'Ulum and Al-Matalib al-'Aliyah.">
+  
+  <!-- Modern Scholarly Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Scheherazade+New:wght@500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css?v=2.3.0">
+</head>
+<body>
+
+  <!-- Ambient Mobile Frame Shell -->
+  <div class="ambient-mobile-shell" id="app-shell">
+    
+    <!-- Top Reading Progress Indicator -->
+    <div class="reading-progress-track">
+      <div class="reading-progress-bar" id="reader-scroll-progress"></div>
+    </div>
+
+    <!-- Mobile Top App Bar -->
+    <header class="mobile-header">
+      <button class="icon-btn" id="btn-open-sidebar" aria-label="Open Taqsim Chapters" title="Taqsim Chapters">
+        <svg class="svg-icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+      
+      <div class="brand-group" id="brand-home">
+        <svg class="brand-emblem" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polygon points="12 3 14.5 9.5 21 12 14.5 14.5 12 21 9.5 14.5 3 12 9.5 9.5 12 3"></polygon></svg>
+        <div class="brand-meta">
+          <span class="brand-title">RaziApp</span>
+          <span class="brand-arabic">نِظَام الرَّازِي</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Fullscreen EPUB Page Mode Switcher -->
+        <button class="icon-btn epub-mode-btn" id="btn-enter-epub-mode" title="Enter Fullscreen EPUB Page-Turn Mode">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        </button>
+
+        <!-- Theme Switcher -->
+        <button class="icon-btn" id="btn-toggle-theme" title="Cycle Theme (Nocturne / Emerald / Sepia / Pristine)">
+          <span id="theme-svg-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          </span>
+        </button>
+
+        <!-- AI Assistant Direct Trigger -->
+        <button class="icon-btn ai-quick-btn" id="btn-toggle-ai" title="Al-Muhaqqiq AI (DeepSeek Flash 4.1)">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Sub-Header: Active Book Navigation Pill & Quick Controls -->
+    <div class="mobile-subnav">
+      <button class="active-book-pill" id="btn-open-library" title="Open Razi Epistemic Library">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        <span class="book-pill-text" id="active-book-title">Loading Classical Corpus...</span>
+        <svg class="svg-icon chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+
+      <div class="subnav-toggles">
+        <button class="subnav-btn" id="btn-open-search" title="Search Codex">
+          <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button class="subnav-btn active" id="btn-toggle-dialectics" title="Toggle Dialectics Highlighting">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M5 21h14"></path><path d="M3 7l4 8h-8l4-8z"></path><path d="M17 7l4 8h-8l4-8z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Mobile Stream Viewport (Continuous Vertical Reading) -->
+    <main class="mobile-viewport" id="reader-viewport">
+      <div class="reading-stream-wrap" id="reader-container">
+        
+        <!-- Chapter Masthead -->
+        <div class="chapter-masthead">
+          <div class="pillar-tag-badge" id="chapter-pillar-badge">Al-Arkan al-Arba'ah</div>
+          <h1 class="chapter-title" id="chapter-title">Loading Classical Treatise...</h1>
+        </div>
+
+        <!-- Paragraphs & Dialectical Cards Stream -->
+        <div id="chapter-content-body" class="chapter-stream">
+          <div class="paragraph-card">
+            <p>Initializing RaziApp sovereign reading engine...</p>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- ====================================================================
+         FULLSCREEN EPUB PAGINATED READING MODE (Side Page Wipe / Swipe)
+         ==================================================================== -->
+    <div class="epub-reading-mode-canvas" id="epub-reader-canvas">
+      
+      <!-- Minimalist Floating Top HUD -->
+      <header class="epub-hud-header" id="epub-hud-header">
+        <button class="icon-btn" id="btn-exit-epub-mode" title="Exit Page Mode (Return to Stream)">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        
+        <div class="epub-hud-center" id="btn-epub-header-title" title="Open Chapter Selection">
+          <span class="epub-hud-book-name" id="epub-hud-book-title">Classical Treatise</span>
+          <span class="epub-hud-chapter-name" id="epub-hud-chapter-title">Section 1</span>
+        </div>
+
+        <div class="epub-hud-right">
+          <!-- Typography Adjuster -->
+          <button class="icon-btn" id="btn-epub-typography" title="Typography & Reading Style">
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+          </button>
+          <!-- Taqsim Chapter Picker -->
+          <button class="icon-btn" id="btn-epub-toc-quick" title="Taqsim Chapters">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          <!-- Fullscreen Toggle -->
+          <button class="icon-btn" id="btn-epub-fullscreen" title="Toggle True Fullscreen">
+            <svg class="svg-icon fs-enter" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            <svg class="svg-icon fs-exit hidden" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
+          </button>
+          <!-- Quick Theme Cycle -->
+          <button class="icon-btn" id="btn-epub-theme-quick" title="Cycle Theme">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Interactive Tap Zones (Previous, Center Menu, Next) with Edge Visual Pulse -->
+      <div class="epub-tap-zone zone-left" id="epub-tap-prev" title="Previous Page">
+        <div class="tap-edge-indicator left-edge"></div>
+      </div>
+      <div class="epub-tap-zone zone-center" id="epub-tap-center" title="Toggle HUD Controls"></div>
+      <div class="epub-tap-zone zone-right" id="epub-tap-next" title="Next Page">
+        <div class="tap-edge-indicator right-edge"></div>
+      </div>
+
+      <!-- Paginated Horizontal Stage Viewport with Page Wipe Depth Shadow -->
+      <div class="epub-stage-viewport" id="epub-stage-viewport">
+        <div class="epub-page-wipe-shadow" id="epub-wipe-shadow"></div>
+        <div class="epub-pages-track" id="epub-pages-track">
+          <!-- Dynamically populated page slides -->
+        </div>
+      </div>
+
+      <!-- Typography Settings Floating Modal Panel -->
+      <div class="epub-typography-panel" id="epub-typography-panel">
+        <div class="typo-panel-header">
+          <span class="typo-panel-title">Reading Typography & Theme</span>
+          <button class="icon-btn" id="btn-close-typography">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <!-- Font Size Adjuster -->
+        <div class="typo-row">
+          <span class="typo-label">Text Size</span>
+          <div class="typo-font-size-ctrl">
+            <button class="typo-size-btn" id="btn-font-smaller" title="Smaller font">A-</button>
+            <span class="font-size-display" id="font-size-val">100%</span>
+            <button class="typo-size-btn" id="btn-font-larger" title="Larger font">A+</button>
+          </div>
+        </div>
+
+        <!-- Font Family Selector -->
+        <div class="typo-row">
+          <span class="typo-label">Typeface</span>
+          <div class="typo-family-chips">
+            <button class="typo-font-chip active" data-font="georgia">Georgia</button>
+            <button class="typo-font-chip" data-font="amiri">Amiri Serif</button>
+            <button class="typo-font-chip" data-font="jakarta">Jakarta Sans</button>
+            <button class="typo-font-chip" data-font="scheherazade">Scheherazade</button>
+          </div>
+        </div>
+
+        <!-- Line Spacing -->
+        <div class="typo-row">
+          <span class="typo-label">Line Spacing</span>
+          <div class="typo-spacing-chips">
+            <button class="spacing-chip" data-spacing="1.5">Compact</button>
+            <button class="spacing-chip active" data-spacing="1.85">Balanced</button>
+            <button class="spacing-chip" data-spacing="2.2">Relaxed</button>
+          </div>
+        </div>
+
+        <!-- Theme Grid in Panel -->
+        <div class="typo-row">
+          <span class="typo-label">Theme</span>
+          <div class="typo-theme-grid">
+            <button class="theme-choice-btn" data-theme-choice="nocturne">
+              <span class="theme-color-dot nocturne"></span>
+              <span>Nocturne</span>
+            </button>
+            <button class="theme-choice-btn" data-theme-choice="emerald">
+              <span class="theme-color-dot emerald"></span>
+              <span>Emerald</span>
+            </button>
+            <button class="theme-choice-btn" data-theme-choice="sepia">
+              <span class="theme-color-dot sepia"></span>
+              <span>Sepia</span>
+            </button>
+            <button class="theme-choice-btn" data-theme-choice="pristine">
+              <span class="theme-color-dot pristine"></span>
+              <span>Pristine</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Minimalist Floating Bottom HUD -->
+      <footer class="epub-hud-footer" id="epub-hud-footer">
+        <button class="epub-nav-btn" id="btn-epub-prev-page" title="Previous Page (Wipe Back)">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+
+        <div class="epub-page-status-wrap">
+          <span class="epub-page-counter" id="epub-page-counter">Page 1 / 1</span>
+          <div class="epub-progress-track">
+            <div class="epub-progress-fill" id="epub-page-progress-fill"></div>
+          </div>
+        </div>
+
+        <button class="epub-nav-btn" id="btn-epub-next-page" title="Next Page (Wipe Forward)">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </footer>
+
+    </div>
+
+    <!-- Floating Classical Arabic Vocalization Bar -->
+    <div class="arabic-audio-dock" id="arabic-audio-dock">
+      <div class="audio-dock-inner">
+        <div class="audio-reciter-info">
+          <div class="audio-wave-bars" id="audio-wave-animation">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          </div>
+          <div class="reciter-meta">
+            <span class="reciter-name">قَارِئ الفَصَاحَة النَّبَوِيَّة</span>
+            <span class="reciter-status" id="audio-reciter-status">Classical Arabic Recitation</span>
+          </div>
+        </div>
+        <div class="audio-actions">
+          <button class="audio-play-pause-btn" id="btn-audio-play-pause" title="Play/Pause Arabic Recitation">
+            <svg class="svg-icon play-icon" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+            <svg class="svg-icon pause-icon hidden" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+          </button>
+          <button class="audio-close-btn" id="btn-audio-stop" title="Stop Audio">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+      <audio id="core-audio-player" preload="none" style="display:none;"></audio>
+    </div>
+
+    <!-- Sticky Mobile Bottom Tab Navigation -->
+    <nav class="mobile-bottom-bar" id="mobile-bottom-bar">
+      <button class="bottom-tab-item" id="mb-btn-toc">
+        <svg class="svg-icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        <span>Taqsim</span>
+      </button>
+      <button class="bottom-tab-item" id="mb-btn-library">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        <span>Arkan</span>
+      </button>
+      <button class="bottom-tab-item" id="mb-btn-reader-mode" title="Toggle Fullscreen EPUB Mode">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>EPUB Page</span>
+      </button>
+      <button class="bottom-tab-item" id="mb-btn-search">
+        <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Search</span>
+      </button>
+      <button class="bottom-tab-item" id="mb-btn-ai">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path></svg>
+        <span>Al-Muhaqqiq</span>
+      </button>
+    </nav>
+
+    <!-- Slide-Up Bottom Sheet: Taqsim (Table of Contents) -->
+    <aside class="mobile-bottom-sheet" id="sidebar-toc">
+      <div class="sheet-drag-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <div>
+            <h3 class="sheet-title">Taqsim (التَّقْسِيم)</h3>
+            <span class="sheet-subtitle">Logical Division & Chapters</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="btn-close-toc" aria-label="Close Chapters">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="sheet-search-bar">
+        <div class="search-box">
+          <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" class="search-input" id="toc-search" placeholder="Filter sections...">
+        </div>
+      </div>
+      <div class="sheet-scroll-content" id="toc-list">
+        <!-- Injected via app.js -->
+      </div>
+    </aside>
+
+    <!-- Slide-Up Bottom Sheet: Al-Muhaqqiq AI Companion (DeepSeek Flash 4.1) -->
+    <aside class="mobile-bottom-sheet" id="ai-drawer">
+      <div class="sheet-drag-handle"></div>
+      <div class="sheet-header">
+        <div class="sheet-title-group">
+          <div class="ai-avatar-circle">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path></svg>
+          </div>
+          <div>
+            <h3 class="sheet-title">Al-Muhaqqiq (المُحَقِّق)</h3>
+            <span class="ai-model-status" id="ai-engine-status">DeepSeek Flash 4.1</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="btn-close-ai" aria-label="Close AI">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <!-- Quick Analysis Chips -->
+      <div class="ai-chips-scroll">
+        <button class="chip-btn" data-prompt="Extract the formal logical syllogism (Burhan / Qiyas) governing this passage.">Formal Syllogism</button>
+        <button class="chip-btn" data-prompt="Deconstruct the primary objection (In Qila) and Razi's decisive refutation.">Deconstruct Objection</button>
+        <button class="chip-btn" data-prompt="Analyze the classical Arabic root (Ishtiqaq) across Kitab al-Ayn and Lisan al-Arab.">Arabic Lexical Root</button>
+        <button class="chip-btn" data-prompt="Synthesize the philosophical conclusion into 3 concise points according to Razi's method.">Triple Synthesis</button>
+        <button class="chip-btn" data-prompt="Apply exhaustive logical division (Al-Taqsim al-Hasir) to the core thesis.">Taqsim Taxonomy</button>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="ai-chat-messages" id="ai-chat-messages">
+        <div class="chat-message assistant">
+          <p><strong>Salamun Alaykum.</strong> I am <em>Al-Muhaqqiq al-Razi</em>. Select any passage in the treatise or tap a prompt chip above to deconstruct its theological, philosophical, and linguistic foundations.</p>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="ai-input-bar">
+        <input type="text" class="ai-text-input" id="ai-input-text" placeholder="Ask a dialectical inquiry...">
+        <button class="send-btn" id="btn-send-ai" aria-label="Send Inquiry">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Modal Sheet: Classical Library (Hierarchical Imam & Topic Taxonomy) -->
+    <div class="modal-backdrop" id="modal-library">
+      <div class="mobile-modal-panel">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <h2 class="modal-title">Razi Sovereign Library</h2>
+            <span class="modal-subtitle" id="library-count-subtitle">246 Masterworks • Classified by Imam & Topic</span>
+          </div>
+          <button class="icon-btn" id="btn-close-library" aria-label="Close Library">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <!-- Hierarchical Filter Bar: Search, Imams, Topics & Version Control -->
+        <div class="modal-filter-bar">
+          <!-- Live Search -->
+          <div class="search-box">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" class="search-input" id="library-search" placeholder="Search treatise, author, Arabic root...">
+          </div>
+
+          <!-- Edition Format Filter Chips (Pure English, Bilingual Lexical, v5 Master, v4 Pro) -->
+          <div class="format-filter-chips" id="format-filter-chips">
+            <button class="format-chip active" data-format="all">All Editions (كافة الطبعات - 246)</button>
+            <button class="format-chip" data-format="pure_en">Pure English (الترجمة الإنجليزية - 147)</button>
+            <button class="format-chip" data-format="v5_pure">v5 Pure EN Master (15)</button>
+            <button class="format-chip" data-format="v4_pure">v4 Pure EN Pro (132)</button>
+            <button class="format-chip" data-format="bilingual">Bilingual Lexical (النص والتحقيق - 95)</button>
+            <button class="format-chip" data-format="v5">v5 Masterworks (30)</button>
+            <button class="format-chip" data-format="v4">v4 Pro Editions (212)</button>
+          </div>
+          
+          <!-- 1. Primary Filter: Imams / Classical Authors -->
+          <div class="author-filter-chips" id="imam-filter-chips">
+            <button class="filter-chip active" data-imam="all">All Imams (كافة الأئمة)</button>
+            <button class="filter-chip" data-imam="razi">Imam al-Razi (الرازي)</button>
+            <button class="filter-chip" data-imam="ghazali">Imam al-Ghazali (الغزالي)</button>
+            <button class="filter-chip" data-imam="nawawi">Imam al-Nawawi (النووي)</button>
+            <button class="filter-chip" data-imam="raghib">Imam al-Raghib (الراغب)</button>
+            <button class="filter-chip" data-imam="heritage">Classical Heritage (أئمة التراث)</button>
+          </div>
+
+          <!-- 2. Secondary Filter: Epistemic Topics -->
+          <div class="topic-filter-chips" id="topic-filter-chips">
+            <button class="topic-chip active" data-topic="all">All Topics (كافة الفنون)</button>
+            <button class="topic-chip" data-topic="kalam">Kalam & Metaphysics (الإلهيات)</button>
+            <button class="topic-chip" data-topic="usul">Usul al-Fiqh (أصول الفقه)</button>
+            <button class="topic-chip" data-topic="tafsir">Tafsir & Quran (التفسير)</button>
+            <button class="topic-chip" data-topic="hadith">Hadith & Sunnah (الحديث)</button>
+            <button class="topic-chip" data-topic="lisan">Lisan & Lexicon (اللسان)</button>
+            <button class="topic-chip" data-topic="tasawwuf">Tasawwuf & Suluk (التصوف)</button>
+            <button class="topic-chip" data-topic="hikmah">Hikmah & Logic (الحكمة)</button>
+            <button class="topic-chip" data-topic="fiqh">Applied Fiqh (الفقه)</button>
+          </div>
+        </div>
+
+        <!-- Book Grid Container (Hierarchical Grouping) -->
+        <div class="modal-grid-scroll" id="library-grid">
+          <!-- Injected dynamically via app.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Sheet: In-Codex Full-Text Search -->
+    <div class="modal-backdrop" id="modal-search">
+      <div class="mobile-modal-panel">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <h2 class="modal-title">In-Codex Search</h2>
+            <span class="modal-subtitle" id="search-modal-book-title">Search across all sections</span>
+          </div>
+          <button class="icon-btn" id="btn-close-search" aria-label="Close Search">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="modal-filter-bar">
+          <div class="search-box">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" class="search-input" id="inbook-search-input" placeholder="Type words, roots, or philosophical terms...">
+          </div>
+        </div>
+
+        <div class="modal-grid-scroll" id="search-results-container">
+          <div class="empty-search-placeholder">
+            Enter a term above to search across all chapters of this classical work.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backdrop overlay for mobile drawers -->
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  </div>
+
+  <script src="app.js?v=2.3.0"></script>
+</body>
+</html>

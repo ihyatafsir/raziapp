@@ -1,0 +1,34 @@
+# Environment & Secrets
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.secret
+*.token
+*credentials*
+*secret*
+*deepseek_key*
+*api_key*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Logs & Temporary
+cache_audio/
+*.log
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# OS / IDE
+.idea/
+.vscode/
