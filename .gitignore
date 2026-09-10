@@ -32,3 +32,11 @@ cache_audio/
 # OS / IDE
 .idea/
 .vscode/
+
+# Android Build Artifacts
+.gradle/
+local.properties
+**/build/
+*.apk
+*.aab
+

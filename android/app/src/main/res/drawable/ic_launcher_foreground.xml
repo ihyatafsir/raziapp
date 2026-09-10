@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Octagram Star Accent -->
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,28 L62,38 L76,38 L70,50 L78,60 L64,64 L54,76 L44,64 L30,60 L38,50 L32,38 L46,38 Z" />
+    
+    <!-- Open Book / Codex Motif in Gold -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M54,44 C48,40 38,40 34,42 L34,68 C38,66 48,66 54,70 C60,66 70,66 74,68 L74,42 C70,40 60,40 54,44 Z" />
+    
+    <!-- Spine Line and Center Ribbon -->
+    <path
+        android:strokeColor="#0A0C10"
+        android:strokeWidth="1.5"
+        android:pathData="M54,44 L54,70" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="1"
+        android:pathData="M38,48 L50,48 M38,54 L50,54 M38,60 L48,60 M58,48 L70,48 M58,54 L70,54 M60,60 L70,60" />
+</vector>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RaziApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_gold</item>
+        <item name="colorPrimaryVariant">@color/brand_emerald</item>
+        <item name="colorOnPrimary">@color/bg_nocturne</item>
+        <item name="android:statusBarColor">@color/bg_nocturne</item>
+        <item name="android:navigationBarColor">@color/bg_nocturne</item>
+        <item name="android:windowBackground">@color/bg_nocturne</item>
+    </style>
+
+    <style name="Theme.RaziApp.NoActionBar" parent="Theme.RaziApp">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>
