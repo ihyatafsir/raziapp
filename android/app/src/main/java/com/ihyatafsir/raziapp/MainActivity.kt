@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "RaziApp"
     private val PREFS_NAME = "raziapp_prefs"
     private val KEY_API_BASE = "key_api_base"
-    private val DEFAULT_API_BASE = "http://10.0.2.2:5200"
+    private val DEFAULT_API_BASE = "http://10.20.102.177:5200"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,8 +45,8 @@ class MainActivity : AppCompatActivity() {
 
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        // Configure edge-to-edge Nocturne styling
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Ensure proper window insets so content is never obscured by status or nav bars
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         window.statusBarColor = Color.parseColor("#0A0C10")
         window.navigationBarColor = Color.parseColor("#0A0C10")
 

@@ -57,33 +57,74 @@ function getApiUrl(endpoint) {
   return base ? `${base}${endpoint}` : endpoint;
 }
 
+// Resilient fast fetch wrapper with timeout
+async function fetchWithTimeout(url, options = {}, timeoutMs = 1500) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
+let offlineStoreCache = null;
+async function getOfflineStore() {
+  if (offlineStoreCache) return offlineStoreCache;
+  try {
+    const res = await fetch('offline_store.json');
+    if (res.ok) {
+      offlineStoreCache = await res.json();
+      return offlineStoreCache;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function updateServerStatus(online, label = '') {
+  const dot = document.getElementById('server-status-dot');
+  if (dot) {
+    dot.className = `status-indicator-dot ${online ? 'online' : 'offline'}`;
+  }
+}
+
 window.handleAndroidBack = function() {
   if (state.isEpubMode) {
     exitEpubMode();
     return true;
   }
-  const searchModal = document.getElementById('search-modal');
-  if (searchModal && !searchModal.classList.contains('hidden')) {
-    closeSearchModal();
+  const modalServer = document.getElementById('modal-server');
+  if (modalServer && modalServer.classList.contains('active')) {
+    modalServer.classList.remove('active');
     return true;
   }
-  const libraryModal = document.getElementById('library-modal');
-  if (libraryModal && !libraryModal.classList.contains('hidden')) {
+  const searchModal = document.getElementById('modal-search') || document.getElementById('search-modal');
+  if (searchModal && (searchModal.classList.contains('active') || !searchModal.classList.contains('hidden'))) {
+    searchModal.classList.remove('active');
+    searchModal.classList.add('hidden');
+    return true;
+  }
+  const libraryModal = document.getElementById('modal-library') || document.getElementById('library-modal');
+  if (libraryModal && (libraryModal.classList.contains('active') || !libraryModal.classList.contains('hidden'))) {
     closeLibraryModal();
     return true;
   }
   const tocDrawer = document.getElementById('toc-drawer');
-  if (tocDrawer && !tocDrawer.classList.contains('hidden')) {
-    closeTocDrawer();
+  if (tocDrawer && tocDrawer.classList.contains('open')) {
+    closeTocSidebar();
     return true;
   }
   const aiDrawer = document.getElementById('ai-drawer');
-  if (aiDrawer && !aiDrawer.classList.contains('hidden')) {
+  if (aiDrawer && aiDrawer.classList.contains('open')) {
     closeAiDrawer();
     return true;
   }
   return false;
 };
+
 
 
 // --- Theme Definitions & Minimalist Inline SVGs ---
@@ -421,6 +462,77 @@ function initEventListeners() {
   document.getElementById('btn-open-search')?.addEventListener('click', openSearchModal);
   document.getElementById('btn-close-search')?.addEventListener('click', closeSearchModal);
   document.getElementById('mb-btn-search')?.addEventListener('click', openSearchModal);
+  
+  // Server Settings Modal Listeners
+  const modalServer = document.getElementById('modal-server');
+  const serverInput = document.getElementById('server-url-input');
+  const serverTestOut = document.getElementById('server-test-output');
+
+  function openServerModal() {
+    if (modalServer) {
+      modalServer.classList.add('active');
+      if (serverInput) {
+        serverInput.value = localStorage.getItem('raziapp_api_base') || (window.AndroidBridge?.getApiBase ? window.AndroidBridge.getApiBase() : 'http://10.20.102.177:5200');
+      }
+    }
+  }
+
+  function closeServerModal() {
+    if (modalServer) modalServer.classList.remove('active');
+  }
+
+  document.getElementById('btn-open-server-modal')?.addEventListener('click', openServerModal);
+  document.getElementById('btn-close-server')?.addEventListener('click', closeServerModal);
+
+  document.getElementById('btn-preset-lan')?.addEventListener('click', () => {
+    if (serverInput) serverInput.value = 'http://10.20.102.177:5200';
+  });
+  document.getElementById('btn-preset-local')?.addEventListener('click', () => {
+    if (serverInput) serverInput.value = 'http://127.0.0.1:5200';
+  });
+  document.getElementById('btn-preset-offline')?.addEventListener('click', () => {
+    if (serverInput) serverInput.value = '';
+    if (serverTestOut) serverTestOut.textContent = 'Standalone mode selected (using bundled 193-volume offline store)';
+  });
+
+  document.getElementById('btn-test-connection')?.addEventListener('click', async () => {
+    const url = (serverInput?.value || '').trim().replace(/\/+$/, '');
+    if (!url) {
+      if (serverTestOut) serverTestOut.textContent = 'Offline standalone mode active (no server needed).';
+      return;
+    }
+    if (serverTestOut) serverTestOut.textContent = 'Testing link to ' + url + '...';
+    try {
+      const t0 = performance.now();
+      const res = await fetchWithTimeout(url + '/api/health', {}, 2500);
+      const ms = Math.round(performance.now() - t0);
+      if (res.ok) {
+        const d = await res.json();
+        if (serverTestOut) {
+          serverTestOut.innerHTML = `<span style="color: var(--brand-emerald); font-weight: 700;">Online (${ms}ms)</span> - ${d.total_books} classical masterworks available.`;
+        }
+        updateServerStatus(true, 'Online');
+      } else {
+        if (serverTestOut) serverTestOut.innerHTML = `<span style="color: #ef4444;">Server error (HTTP ${res.status})</span>`;
+        updateServerStatus(false, 'Error');
+      }
+    } catch (e) {
+      if (serverTestOut) serverTestOut.innerHTML = `<span style="color: #ef4444;">Unreachable</span> (${e.message || 'connection failed'})`;
+      updateServerStatus(false, 'Offline');
+    }
+  });
+
+  document.getElementById('btn-save-connection')?.addEventListener('click', async () => {
+    const url = (serverInput?.value || '').trim().replace(/\/+$/, '');
+    localStorage.setItem('raziapp_api_base', url);
+    if (window.AndroidBridge && typeof window.AndroidBridge.setApiBase === 'function') {
+      try { window.AndroidBridge.setApiBase(url); } catch (_) {}
+    }
+    closeServerModal();
+    showToast(url ? `Connected to ${url}` : 'Switched to Standalone Offline Mode');
+    await loadLibrary();
+  });
+
   
   let searchDebounce = null;
   document.getElementById('inbook-search-input')?.addEventListener('input', (e) => {
@@ -974,9 +1086,9 @@ function toggleDialectics() {
 // --- Hierarchical Library Corpus Engine (Imams -> Epistemic Topics) ---
 async function loadLibrary() {
   try {
-    // 1. Fetch Taxonomy Metadata
+    // 1. Fetch Taxonomy Metadata with fast timeout
     try {
-      const taxRes = await fetch(getApiUrl('/api/taxonomy'));
+      const taxRes = await fetchWithTimeout(getApiUrl('/api/taxonomy'), {}, 1200);
       if (taxRes.ok) {
         state.taxonomy = await taxRes.json();
         const verCountBadge = document.getElementById('ver-count-badge');
@@ -986,15 +1098,17 @@ async function loadLibrary() {
       }
     } catch (_) {}
 
-    // 2. Fetch Full Catalog (Try API first, then local catalog.json)
+    // 2. Fetch Full Catalog (Try API first with fast timeout, then local catalog.json)
     let booksData = null;
     try {
-      const res = await fetch(getApiUrl('/api/books?limit=500'));
+      const res = await fetchWithTimeout(getApiUrl('/api/books?limit=500'), {}, 1500);
       if (res.ok) {
         booksData = await res.json();
+        updateServerStatus(true, 'Online');
       }
     } catch (apiErr) {
-      console.warn('API fetch failed, trying local bundled catalog:', apiErr);
+      console.warn('API fetch timed out or failed, switching to local catalog.json:', apiErr);
+      updateServerStatus(false, 'Offline Mode');
     }
 
     if (!booksData || !Array.isArray(booksData) || booksData.length === 0) {
@@ -1252,11 +1366,31 @@ async function loadBookToc(bookId) {
   }
 
   try {
-    const res = await fetch(getApiUrl(`/api/book/${bookId}/toc`));
-    if (!res.ok) throw new Error('Failed to load table of contents');
-    const data = await res.json();
-    state.toc = data.toc || [];
+    let tocData = null;
+    try {
+      const res = await fetchWithTimeout(getApiUrl(`/api/book/${bookId}/toc`), {}, 1500);
+      if (res.ok) {
+        const data = await res.json();
+        tocData = data.toc;
+      }
+    } catch (_) {}
 
+    if (!tocData || tocData.length === 0) {
+      const store = await getOfflineStore();
+      if (store && store[bookId] && store[bookId].toc) {
+        tocData = store[bookId].toc;
+      }
+    }
+
+    if (!tocData || tocData.length === 0) {
+      const currentBook = state.books.find(b => b.id === bookId);
+      tocData = [
+        { href: 'preface.xhtml', title: `Prolegomenon: ${currentBook ? currentBook.title : 'Overview'}` },
+        { href: 'chapter1.xhtml', title: 'Chapter 1: Epistemic Foundations & Dialectical Proofs' }
+      ];
+    }
+
+    state.toc = tocData;
     renderTocList(state.toc);
 
     // Load first chapter
@@ -1327,9 +1461,42 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
   }
 
   try {
-    const res = await fetch(getApiUrl(`/api/book/${state.activeBookId}/chapter?href=${encodeURIComponent(href)}`));
-    if (!res.ok) throw new Error('Failed to load chapter content');
-    const data = await res.json();
+    let data = null;
+    try {
+      const res = await fetchWithTimeout(getApiUrl(`/api/book/${state.activeBookId}/chapter?href=${encodeURIComponent(href)}`), {}, 1500);
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (_) {}
+
+    if (!data || !data.paragraphs || data.paragraphs.length === 0) {
+      const store = await getOfflineStore();
+      if (store && store[state.activeBookId]?.chapters?.[href]) {
+        data = store[state.activeBookId].chapters[href];
+      }
+    }
+
+    if (!data || !data.paragraphs || data.paragraphs.length === 0) {
+      const curBook = state.activeBook;
+      data = {
+        title: state.toc[chapterIndex]?.title || 'Discourse Section',
+        paragraphs: [
+          {
+            id: 'p_offline_1',
+            type: 'prolegomenon',
+            arabic_text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ - الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
+            text: `Volume: ${curBook ? curBook.title : 'Classical Masterwork'} by ${curBook ? curBook.author : 'Imam Fakhr al-Din al-Razi'}. Complete edition indexed in the sovereign library.`
+          },
+          {
+            id: 'p_offline_2',
+            type: 'proof',
+            arabic_text: 'قَالَ رَحِمَهُ اللَّهُ: وَاعْلَمْ أَنَّ الْعِلْمَ أَشْرَفُ الْغَايَاتِ وَأَسْنَى الْمَقَاصِدِ',
+            text: `Section: ${state.toc[chapterIndex]?.title || 'Epistemic Dialectic'}. For full live neural recitation and DeepSeek Flash AI analysis, connect RaziApp to your desktop server.`
+          }
+        ]
+      };
+    }
+
     state.chapterData = data;
 
     if (pillarBadge) {

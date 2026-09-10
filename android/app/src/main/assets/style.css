@@ -1851,6 +1851,30 @@ button {
   font-size: 0.82rem;
 }
 
+.status-indicator-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--bg-surface);
+}
+
+.status-indicator-dot.online {
+  background-color: var(--brand-emerald);
+  box-shadow: 0 0 6px var(--brand-emerald);
+}
+
+.status-indicator-dot.offline {
+  background-color: #f59e0b;
+}
+
+.status-indicator-dot.error {
+  background-color: #ef4444;
+}
+
 .hidden {
   display: none !important;
 }
+
