@@ -42,3 +42,7 @@ local.properties
 android/app/src/main/assets/epubs/
 
 
+
+# Keystores
+*.keystore
+
