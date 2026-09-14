@@ -200,6 +200,87 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        fun executeDeepSeekCall(systemPrompt: String, userPrompt: String, apiKey: String, model: String): String {
+            val callThread = java.util.concurrent.Executors.newSingleThreadExecutor()
+            val future = callThread.submit(java.util.concurrent.Callable<String> {
+                try {
+                    val activeKey = apiKey.trim()
+                    if (activeKey.isBlank()) {
+                        return@Callable org.json.JSONObject().apply {
+                            put("success", false)
+                            put("error", "No DeepSeek API key provided")
+                        }.toString()
+                    }
+                    val activeModel = if (model.isNotBlank()) model.trim() else "deepseek-chat"
+                    val url = java.net.URL("https://api.deepseek.com/chat/completions")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    conn.setRequestProperty("Authorization", "Bearer $activeKey")
+                    conn.connectTimeout = 15000
+                    conn.readTimeout = 40000
+                    conn.doOutput = true
+
+                    val jsonBody = org.json.JSONObject().apply {
+                        put("model", activeModel)
+                        put("messages", org.json.JSONArray().apply {
+                            put(org.json.JSONObject().apply {
+                                put("role", "system")
+                                put("content", systemPrompt)
+                            })
+                            put(org.json.JSONObject().apply {
+                                put("role", "user")
+                                put("content", userPrompt)
+                            })
+                        })
+                        put("temperature", 0.1)
+                        put("max_tokens", 4096)
+                    }
+
+                    conn.outputStream.use { os ->
+                        os.write(jsonBody.toString().toByteArray(Charsets.UTF_8))
+                    }
+
+                    if (conn.responseCode in 200..299) {
+                        val responseText = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        val respJson = org.json.JSONObject(responseText)
+                        val content = respJson.getJSONArray("choices")
+                            .getJSONObject(0)
+                            .getJSONObject("message")
+                            .getString("content")
+                        org.json.JSONObject().apply {
+                            put("success", true)
+                            put("content", content)
+                        }.toString()
+                    } else {
+                        val errText = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                        org.json.JSONObject().apply {
+                            put("success", false)
+                            put("error", "HTTP ${conn.responseCode}: $errText")
+                        }.toString()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Native DeepSeek call failed: ${e.message}", e)
+                    org.json.JSONObject().apply {
+                        put("success", false)
+                        put("error", e.message ?: "Connection error")
+                    }.toString()
+                }
+            })
+
+            return try {
+                future.get(45, java.util.concurrent.TimeUnit.SECONDS)
+            } catch (e: Exception) {
+                org.json.JSONObject().apply {
+                    put("success", false)
+                    put("error", "Request timeout: ${e.message}")
+                }.toString()
+            } finally {
+                callThread.shutdown()
+            }
+        }
+
+        @JavascriptInterface
         fun shareEpubFile(title: String, filename: String, base64Content: String) {
             runOnUiThread {
                 try {

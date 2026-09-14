@@ -13,7 +13,7 @@
   
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
-  <link rel="stylesheet" href="style.css?v=2.3.1">
+  <link rel="stylesheet" href="style.css?v=2.3.2">
 </head>
 <body>
 
@@ -535,13 +535,16 @@
       </div>
     </div>
 
-        <!-- AynEngine AI Translation Studio Modal -->
-    <div class="modal-backdrop" id="modal-translation-studio">
-      <div class="mobile-modal-panel" style="max-width: 680px;">
-        <div class="modal-header">
+        <!-- AynEngine AI Translation Studio Modal (Standalone Edition) -->
+    <div class="modal-backdrop studio-fullscreen-workspace" id="modal-translation-studio">
+      <div class="mobile-modal-panel studio-modal-panel">
+        <div class="modal-header studio-header-sticky">
           <div class="modal-title-wrap">
-            <h2 class="modal-title">AynEngine Translation Studio</h2>
-            <span class="modal-subtitle">v5.1 Sovereign Quad-Lexical RAG Edition</span>
+            <h2 class="modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="ayn-logo-badge" style="background: var(--brand-gold); color: #000; font-weight: 900; border-radius: 6px; padding: 0.1rem 0.45rem; font-size: 0.95rem; font-family: 'Amiri', serif;">ع</span>
+              <span>AynEngine Translation Studio</span>
+            </h2>
+            <span class="modal-subtitle">v5.1 Sovereign Quad-Lexical RAG Edition (Offline & Cloud)</span>
           </div>
           <button class="icon-btn" id="btn-close-translation-studio" aria-label="Close Translation Studio">
             <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -552,136 +555,185 @@
         <div class="studio-tabs-bar">
           <button class="studio-tab-btn active" data-tab="openiti" id="tab-btn-openiti">
             <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            <span>OpenITI Corpus (7,123)</span>
+            <span>Classical Corpus (574)</span>
           </button>
           <button class="studio-tab-btn" data-tab="local" id="tab-btn-local">
             <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-            <span>Local Library</span>
+            <span>Manuscripts (88)</span>
           </button>
           <button class="studio-tab-btn" data-tab="upload" id="tab-btn-upload">
             <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            <span>Upload PDF / Text</span>
+            <span>Upload / Paste</span>
+          </button>
+          <button class="studio-tab-btn" data-tab="lexicon" id="tab-btn-lexicon">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>RAG Lexicon (4,054 Roots)</span>
           </button>
         </div>
 
-        <!-- Tab 1: OpenITI Search -->
-        <div class="studio-tab-content" id="tab-content-openiti">
-          <div class="search-box" style="margin-bottom: 0.85rem;">
-            <input type="text" class="search-input" id="openiti-search-input" placeholder="Search 7,123 classical works by title, author, or Hijri date (e.g. razi, ghazali, 0505, تفسير)...">
-          </div>
-          <div class="openiti-results-list" id="openiti-results-list">
-            <!-- Populated dynamically with classical book cards -->
-          </div>
-        </div>
-
-        <!-- Tab 2: Local Library Selection -->
-        <div class="studio-tab-content" id="tab-content-local" style="display: none;">
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label class="studio-label">Select Classical Islamic Work:</label>
-            <select class="studio-select" id="local-source-select">
-              <option value="">Loading local texts...</option>
-            </select>
-          </div>
-          <div id="local-source-preview" class="manuscript-preview-box"></div>
-        </div>
-
-        <!-- Tab 3: Upload File -->
-        <div class="studio-tab-content" id="tab-content-upload" style="display: none;">
-          <div class="upload-dropzone" id="upload-dropzone">
-            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 36px; height: 36px; color: var(--brand-gold); margin-bottom: 0.5rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="12" y2="12"></line><line x1="15" y1="15" x2="12" y2="12"></line></svg>
-            <p style="margin: 0; font-size: 0.9rem; font-weight: 600;">Choose a file or drag and drop</p>
-            <p style="margin: 4px 0 0; font-size: 0.75rem; color: var(--text-muted);">Supports PDF (via pdftotext), TXT, and MD files</p>
-            <input type="file" id="upload-file-input" accept=".pdf,.txt,.md" style="display: none;">
-          </div>
-          <div id="upload-file-preview" class="manuscript-preview-box" style="display: none;"></div>
-        </div>
-
-        <!-- Translation Parameters -->
-        <div class="studio-config-section">
-          <div class="studio-config-row">
-            <div class="studio-field">
-              <label class="studio-label">Target Language:</label>
-              <select class="studio-select" id="studio-target-lang">
-                <option value="en">English (Scholarly)</option>
-                <option value="sq">Albanian (Shqip)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="tr">Turkish (Turkce)</option>
-                <option value="fr">French (Francais)</option>
-              </select>
+        <!-- Scrollable Modal Body (Prevents Any Window Overlap) -->
+        <div class="studio-modal-body" id="studio-modal-body">
+          <!-- Tab 1: Classical Corpus Search -->
+          <div class="studio-tab-content" id="tab-content-openiti">
+            <div class="search-box" style="margin-bottom: 0.75rem;">
+              <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" class="search-input" id="openiti-search-input" placeholder="Search 574 classical works (e.g. razi, ghazali, nawawi, tafsir)...">
             </div>
-            <div class="studio-field">
-              <label class="studio-label">Edition Format:</label>
-              <select class="studio-select" id="studio-edition-mode">
-                <option value="bilingual">Bilingual Apparatus Edition (Arabic + Scholia + Translation)</option>
-                <option value="pure">Pure Target Language Edition (Authorial Voice)</option>
-              </select>
+            <div class="openiti-results-list" id="openiti-results-list">
+              <!-- Cards rendered with full styling -->
             </div>
           </div>
 
-          <div class="studio-config-row">
-            <div class="studio-field">
-              <label class="studio-label">AI Engine Provider:</label>
-              <select class="studio-select" id="studio-ai-engine">
-                <option value="deepseek">DeepSeek Flash v4.1 (with Ollama fallback)</option>
-                <option value="ollama">Local Ollama (Offline Qwen/Gemma)</option>
+          <!-- Tab 2: Local Library Selection -->
+          <div class="studio-tab-content" id="tab-content-local" style="display: none;">
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+              <label class="studio-label">Select Classical Islamic Work:</label>
+              <select class="studio-select" id="local-source-select">
+                <option value="">Loading local classical texts...</option>
               </select>
             </div>
-            <div class="studio-field">
-              <label class="studio-label">Scope / Quick Test:</label>
-              <select class="studio-select" id="studio-chunk-limit">
-                <option value="3">Quick Sample Mode (First 3 Sections)</option>
-                <option value="10">Expanded Sample (First 10 Sections)</option>
-                <option value="0">Complete Manuscript (Full Codex)</option>
-              </select>
+            <div id="local-source-preview" class="manuscript-preview-box"></div>
+          </div>
+
+          <!-- Tab 3: Upload File or Paste -->
+          <div class="studio-tab-content" id="tab-content-upload" style="display: none;">
+            <div class="upload-dropzone" id="upload-dropzone">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width: 32px; height: 32px; color: var(--brand-gold); margin-bottom: 0.35rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="12" y2="12"></line><line x1="15" y1="15" x2="12" y2="12"></line></svg>
+              <p style="margin: 0; font-size: 0.88rem; font-weight: 600;">Choose a file or tap to upload</p>
+              <p style="margin: 3px 0 0; font-size: 0.72rem; color: var(--text-muted);">Supports PDF, TXT, and Markdown manuscripts</p>
+              <input type="file" id="upload-file-input" accept=".pdf,.txt,.md" style="display: none;">
+            </div>
+            <div style="margin-top: 0.75rem;">
+              <label class="studio-label">Or Paste Classical Text Directly:</label>
+              <textarea id="studio-paste-text" class="studio-textarea" placeholder="Paste classical text passages here... (بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ...)" rows="3"></textarea>
+            </div>
+            <div id="upload-file-preview" class="manuscript-preview-box" style="display: none;"></div>
+          </div>
+
+          <!-- Tab 4: RAG Lexicon Explorer -->
+          <div class="studio-tab-content" id="tab-content-lexicon" style="display: none;">
+            <div class="search-box" style="margin-bottom: 0.65rem;">
+              <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" class="search-input" id="rag-lexicon-search-input" placeholder="Search 4,054 roots (e.g. علم, عقل, نور, لطف, حكم)...">
+            </div>
+            <div class="rag-quick-tags" id="rag-quick-tags" style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+              <button class="rag-tag-btn" data-root="علم">علم</button>
+              <button class="rag-tag-btn" data-root="عقل">عقل</button>
+              <button class="rag-tag-btn" data-root="وجود">وجود</button>
+              <button class="rag-tag-btn" data-root="جوهر">جوهر</button>
+              <button class="rag-tag-btn" data-root="عرض">عرض</button>
+              <button class="rag-tag-btn" data-root="لطف">لطف</button>
+              <button class="rag-tag-btn" data-root="نور">نور</button>
+              <button class="rag-tag-btn" data-root="حكم">حكم</button>
+              <button class="rag-tag-btn" data-root="روح">روح</button>
+              <button class="rag-tag-btn" data-root="نفس">نفس</button>
+              <button class="rag-tag-btn" data-root="برهان">برهان</button>
+              <button class="rag-tag-btn" data-root="حق">حق</button>
+            </div>
+            <div class="rag-results-list" id="rag-lexicon-results-list" style="max-height: 280px; overflow-y: auto;">
+              <!-- Dynamic RAG Lexicon Cards -->
             </div>
           </div>
 
-          <!-- RAG Lexical Glossary Checkbox -->
-          <div class="studio-checkbox-row">
-            <label class="studio-checkbox-label">
-              <input type="checkbox" id="studio-include-glossary" checked>
-              <span>Append Lexicographical Concordance & Theological Glossary on Final Pages (المعجم الاصطلاحي)</span>
-            </label>
+          <!-- Selected Book Metadata Summary -->
+          <div id="studio-selection-summary" class="studio-selection-summary" style="display: none;">
+            <div class="summary-meta">
+              <div class="summary-badge">Selected Manuscript</div>
+              <span class="summary-ar-title" id="summary-ar-title"></span>
+              <span class="summary-en-title" id="summary-en-title"></span>
+              <span class="summary-author" id="summary-author"></span>
+            </div>
+          </div>
+
+          <!-- Translation Parameters -->
+          <div class="studio-config-section">
+            <div class="studio-config-row">
+              <div class="studio-field">
+                <label class="studio-label">Target Language:</label>
+                <select class="studio-select" id="studio-target-lang">
+                  <option value="en">English (Scholarly)</option>
+                  <option value="sq">Albanian (Shqip)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="tr">Turkish (Türkçe)</option>
+                  <option value="fr">French (Français)</option>
+                </select>
+              </div>
+              <div class="studio-field">
+                <label class="studio-label">Edition Format:</label>
+                <select class="studio-select" id="studio-edition-mode">
+                  <option value="bilingual">Bilingual Apparatus Edition (Arabic + Scholia + Translation)</option>
+                  <option value="pure">Pure Target Language Edition (Authorial Voice)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="studio-config-row">
+              <div class="studio-field">
+                <label class="studio-label">AI Engine Provider:</label>
+                <select class="studio-select" id="studio-ai-engine">
+                  <option value="deepseek">DeepSeek Flash v4.1 (Cloud Engine)</option>
+                  <option value="rag_standalone">Standalone Quad-Lexical RAG (100% Offline)</option>
+                </select>
+              </div>
+              <div class="studio-field">
+                <label class="studio-label">Scope / Quick Test:</label>
+                <select class="studio-select" id="studio-chunk-limit">
+                  <option value="3">Quick Sample Mode (First 3 Sections)</option>
+                  <option value="10">Expanded Sample (First 10 Sections)</option>
+                  <option value="0">Complete Manuscript (Full Codex)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="studio-field" id="studio-api-key-container" style="margin-top: 0.35rem;">
+              <label class="studio-label" style="display: flex; justify-content: space-between;">
+                <span>DeepSeek API Key (Optional Custom Key):</span>
+                <span id="api-key-status-badge" style="color: var(--brand-emerald); font-weight: 600; text-transform: none;">Preconfigured Active</span>
+              </label>
+              <input type="password" class="search-input" id="studio-api-key-input" placeholder="sk-..." style="font-family: monospace; font-size: 0.8rem; padding: 0.45rem 0.75rem;">
+            </div>
+
+            <!-- RAG Lexical Glossary Checkbox -->
+            <div class="studio-checkbox-row">
+              <label class="studio-checkbox-label">
+                <input type="checkbox" id="studio-include-glossary" checked>
+                <span>Append Lexicographical Concordance & Theological Glossary on Final Pages (المعجم الاصطلاحي)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Live Job Monitor Panel -->
+          <div id="studio-monitor-panel" class="studio-monitor-panel" style="display: none;">
+            <div class="monitor-header">
+              <span class="monitor-status-badge" id="monitor-status-badge">Translating</span>
+              <span class="monitor-progress-text" id="monitor-progress-text">0%</span>
+            </div>
+            <div class="studio-progress-track">
+              <div class="studio-progress-fill" id="studio-progress-fill" style="width: 0%;"></div>
+            </div>
+            <div class="monitor-roots-box">
+              <span class="roots-label">Active RAG Roots:</span>
+              <div class="roots-tags" id="monitor-roots-tags"></div>
+            </div>
+            <div class="monitor-live-preview" id="monitor-live-preview">
+              <em>Awaiting translation stream...</em>
+            </div>
           </div>
         </div>
 
-        <!-- Selected Book Metadata Summary -->
-        <div id="studio-selection-summary" class="studio-selection-summary" style="display: none;">
-          <div class="summary-meta">
-            <span class="summary-ar-title" id="summary-ar-title"></span>
-            <span class="summary-en-title" id="summary-en-title"></span>
-            <span class="summary-author" id="summary-author"></span>
-          </div>
-        </div>
-
-        <!-- Live Job Monitor Panel -->
-        <div id="studio-monitor-panel" class="studio-monitor-panel" style="display: none;">
-          <div class="monitor-header">
-            <span class="monitor-status-badge" id="monitor-status-badge">Translating</span>
-            <span class="monitor-progress-text" id="monitor-progress-text">0%</span>
-          </div>
-          <div class="studio-progress-track">
-            <div class="studio-progress-fill" id="studio-progress-fill" style="width: 0%;"></div>
-          </div>
-          <div class="monitor-roots-box">
-            <span class="roots-label">Active RAG Roots:</span>
-            <div class="roots-tags" id="monitor-roots-tags"></div>
-          </div>
-          <div class="monitor-live-preview" id="monitor-live-preview">
-            <em>Awaiting translation stream...</em>
-          </div>
-        </div>
-
-        <!-- Actions Footer -->
-        <div class="modal-footer" style="display: flex; gap: 0.75rem; padding: 1rem 1.25rem;">
+        <!-- Sticky Actions Footer (Always Visible) -->
+        <div class="modal-footer studio-footer-sticky">
           <button class="version-toggle-btn" id="btn-studio-cancel" style="flex: 1; justify-content: center; padding: 0.75rem;">
-            Cancel
+            Close Studio
           </button>
           <button class="version-toggle-btn active" id="btn-studio-start" style="flex: 2; justify-content: center; padding: 0.75rem; background: var(--brand-gold); color: #000; font-weight: 700;">
             Start AynEngine Translation
           </button>
-          <button class="version-toggle-btn active" id="btn-studio-open-reader" style="flex: 2; justify-content: center; padding: 0.75rem; background: var(--brand-emerald); color: #fff; font-weight: 700; display: none;">
+          <button class="version-toggle-btn active" id="btn-studio-open-reader" style="flex: 1.5; justify-content: center; padding: 0.75rem; background: var(--brand-emerald); color: #fff; font-weight: 700; display: none;">
             Read in RaziApp Now
+          </button>
+          <button class="version-toggle-btn" id="btn-studio-share-epub" style="flex: 1.5; justify-content: center; padding: 0.75rem; background: rgba(212, 175, 55, 0.15); border: 1px solid var(--brand-gold); color: var(--brand-gold); font-weight: 700; display: none;">
+            Share EPUB
           </button>
         </div>
       </div>
@@ -701,8 +753,8 @@
   </div>
 
   <script src="jszip.min.js"></script>
-  <script src="epub_engine.js?v=2.3.1"></script>
-  <script src="app.js?v=2.3.1"></script>
+  <script src="epub_engine.js?v=2.3.2"></script>
+  <script src="app.js?v=2.3.2"></script>
 </body>
 </html>
 

@@ -11,8 +11,8 @@ android {
         applicationId "com.ihyatafsir.raziapp"
         minSdk 24
         targetSdk 36
-        versionCode 231
-        versionName "2.3.1"
+        versionCode 233
+        versionName "2.3.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
