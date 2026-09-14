@@ -28,6 +28,74 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from ebooklib import epub
 
+LATIN_ALIASES = {
+    'avicenna': 'ibn sina',
+    'averroes': 'ibn rushd',
+    'rhazes': 'razi',
+    'rhasis': 'razi',
+    'algazel': 'ghazali',
+    'algazelis': 'ghazali',
+    'alfarabi': 'farabi',
+    'alfarabius': 'farabi',
+    'alkindi': 'kindi',
+    'alkindus': 'kindi',
+    'avempace': 'ibn bajja',
+    'abubacer': 'ibn tufayl',
+    'albatenius': 'battani',
+    'alhazen': 'ibn haytham',
+    'algorismus': 'khwarizmi',
+    'alpetragius': 'bitruji',
+    'arzachel': 'zarqali',
+}
+
+SCHOLAR_TRANSLIT_TO_ARABIC = {
+    'ghazali': 'غزالي',
+    'razi': 'رازي',
+    'ibn sina': 'ابن سينا',
+    'sina': 'سينا',
+    'ibn rushd': 'ابن رشد',
+    'rushd': 'رشد',
+    'tabari': 'طبري',
+    'ashari': 'اشعري',
+    'maturidi': 'ماتريدي',
+    'baqillani': 'باقلاني',
+    'juwayni': 'جويني',
+    'suyuti': 'سيوطي',
+    'qurtubi': 'قرطبي',
+    'zamakhshari': 'زمخشري',
+    'kindi': 'كندي',
+    'farabi': 'فارابي',
+    'khaldun': 'خلدون',
+    'bayhaqi': 'بيهقي',
+    'dhahabi': 'ذهبي',
+    'ibn kathir': 'ابن كثير',
+    'kathir': 'كثير',
+    'ibn hajar': 'ابن حجر',
+    'hajar': 'حجر',
+    'nawawi': 'نووي',
+    'suhrawardi': 'سهروردي',
+    'shafii': 'شافعي',
+    'shafi': 'شافعي',
+    'hanafi': 'حنفي',
+    'maliki': 'مالكي',
+    'hanbali': 'حنبلي',
+    'baghdadi': 'بغدادي',
+    'isfahani': 'اصفهاني',
+    'raghib': 'راغب',
+    'taftazani': 'تفتازاني',
+    'amidi': 'امدي',
+    'jurjani': 'جرجاني',
+    'taymiyya': 'تيمية',
+    'taymiyyah': 'تيمية',
+    'taimiyya': 'تيمية',
+    'ibn taymiyya': 'ابن تيمية',
+    'ibn taymiyyah': 'ابن تيمية',
+    'qayyim': 'قيم',
+    'ibn al-qayyim': 'ابن القيم',
+    'ibn qayyim': 'ابن قيم',
+}
+
+
 BASE_DIR = Path(__file__).parent.resolve()
 
 class AynTranslationStudio:
@@ -105,32 +173,113 @@ class AynTranslationStudio:
                 print(f"[AynStudio] Error loading OpenITI catalog: {e}")
         return []
 
-    # --- Search & Preview APIs ---
+# --- Universal Transliteration & Search APIs ---
     def _normalize_search_term(self, s: str) -> str:
         if not s:
             return ''
-        s = s.lower()
-        s = re.sub(r'[\-_.]', ' ', s)
-        s = re.sub(r'[ً-ٰٟ]', '', s)
-        s = re.sub(r'[إأآٱ]', 'ا', s)
-        s = re.sub(r'ى', 'ي', s)
-        s = re.sub(r'ة', 'ه', s)
-        return ' '.join(s.split())
+        t = s.lower()
+        
+        # Apply Western Latin scholarly aliases
+        for k, v in LATIN_ALIASES.items():
+            t = re.sub(r'\b' + k + r'\b', v, t)
+
+        # Strip Latin diacritics and macrons
+        t = re.sub(r'[āáàâä]', 'a', t)
+        t = re.sub(r'[īíìîï]', 'i', t)
+        t = re.sub(r'[ūúùûü]', 'u', t)
+        t = re.sub(r'[ṭţ]', 't', t)
+        t = re.sub(r'[ṣş]', 's', t)
+        t = re.sub(r'[ḍ]', 'd', t)
+        t = re.sub(r'[ẓ]', 'z', t)
+        t = re.sub(r'[ḥ]', 'h', t)
+
+        # Strip Arabic definite articles (al-, el-, ad-, ar-, as-, at-, az-, an-, ash-)
+        t = re.sub(r'\b(al|el|ad|ar|as|at|az|an|ash)[-\s]', ' ', t)
+        t = re.sub(r'\b(al|el)\b', ' ', t)
+
+        # Remove apostrophes, hyphens, and ayn marks without inserting spaces
+        for ch in ["'", "`", "‘", "’", "ʿ", "ʾ", "-", "_", "."]:
+            t = t.replace(ch, '')
+
+        t = t.replace('aim', 'aym')
+        t = t.replace('iyyah', 'iya').replace('iyya', 'iya')
+        t = t.replace('ou', 'u').replace('oo', 'u').replace('ee', 'i').replace('aa', 'a')
+
+        # Normalize OpenITI convention where 'c' represents Ayn (ع) e.g. Ashcari -> ashari, Cabd -> abd
+        t = t.replace('c', '')
+
+        # Arabic script normalization
+        t = re.sub(r'[ً-ٰٟ]', '', t)
+        t = re.sub(r'[إأآٱ]', 'ا', t)
+        t = re.sub(r'ى', 'ي', t)
+        t = re.sub(r'ة', 'ه', t)
+
+        t = re.sub(r'[^a-z0-9\u0600-\u06FF\s]', ' ', t)
+        return ' '.join(t.split())
 
     def search_openiti(self, query: str, limit: int = 50) -> List[Dict[str, Any]]:
         if not query or len(query.strip()) < 2:
             return self.openiti_catalog[:limit]
+
         q_norm = self._normalize_search_term(query)
         q_tokens = q_norm.split()
-        results = []
+
+        ar_terms = []
+        for k, v in SCHOLAR_TRANSLIT_TO_ARABIC.items():
+            if k in query.lower():
+                ar_terms.append(v)
+
+        scored_results = []
         for item in self.openiti_catalog:
-            raw_str = f"{item.get('title_ar', '')} {item.get('title_lat', '')} {item.get('author_ar', '')} {item.get('author_lat', '')} {item.get('date', '')}"
-            norm_str = self._normalize_search_term(raw_str)
-            if all(tok in norm_str for tok in q_tokens):
-                results.append(item)
-                if len(results) >= limit:
-                    break
-        return results
+            author_lat = self._normalize_search_term(item.get('author_lat', ''))
+            author_lat_tokens = set(author_lat.split())
+            author_ar = self._normalize_search_term(item.get('author_ar', ''))
+            title_lat = self._normalize_search_term(item.get('title_lat', ''))
+            title_lat_tokens = set(title_lat.split())
+            title_ar = self._normalize_search_term(item.get('title_ar', ''))
+
+            score = 0
+
+            # 1. Exact token matching
+            if q_tokens:
+                exact_auth = sum(1 for tok in q_tokens if tok in author_lat_tokens)
+                if exact_auth == len(q_tokens):
+                    score += 300
+                elif exact_auth > 0:
+                    score += exact_auth * 80
+
+                exact_title = sum(1 for tok in q_tokens if tok in title_lat_tokens)
+                if exact_title == len(q_tokens):
+                    score += 160
+                elif exact_title > 0:
+                    score += exact_title * 50
+
+            # 2. Canonical Arabic terms
+            if ar_terms:
+                for ar in ar_terms:
+                    if ar in author_ar:
+                        score += 260
+                    elif ar in title_ar:
+                        score += 120
+
+            # 3. Direct substring matches
+            q_clean = query.strip().lower()
+            if q_clean in item.get('author_lat', '').lower():
+                score += 200
+            elif q_clean in item.get('title_lat', '').lower():
+                score += 100
+
+            # 4. Partial token coverage in full metadata
+            if score == 0 and q_tokens:
+                full_str = f"{author_lat} {title_lat} {item.get('raw_url', '')}"
+                if all(tok in full_str for tok in q_tokens):
+                    score += 30
+
+            if score > 0:
+                scored_results.append((score, item))
+
+        scored_results.sort(key=lambda x: x[0], reverse=True)
+        return [item for score, item in scored_results[:limit]]
 
     def fetch_openiti_text(self, raw_url: str) -> str:
         req = urllib.request.Request(raw_url, headers={"User-Agent": "RaziApp-AynStudio/2.3"})

@@ -2261,27 +2261,206 @@ function closeTranslationStudio() {
 window.openTranslationStudio = openTranslationStudio;
 window.closeTranslationStudio = closeTranslationStudio;
 
+// ==========================================================================
+// UNIVERSAL TRANSLITERATION & SCHOLARLY SEARCH ENGINE (7,123 WORKS)
+// ==========================================================================
+
+const LATIN_SCHOLAR_ALIASES = {
+  'avicenna': 'ibn sina',
+  'averroes': 'ibn rushd',
+  'rhazes': 'razi',
+  'rhasis': 'razi',
+  'algazel': 'ghazali',
+  'algazelis': 'ghazali',
+  'alfarabi': 'farabi',
+  'alfarabius': 'farabi',
+  'alkindi': 'kindi',
+  'alkindus': 'kindi',
+  'avempace': 'ibn bajja',
+  'abubacer': 'ibn tufayl',
+  'albatenius': 'battani',
+  'alhazen': 'ibn haytham',
+  'algorismus': 'khwarizmi',
+  'alpetragius': 'bitruji',
+  'arzachel': 'zarqali'
+};
+
+const SCHOLAR_TRANSLIT_TO_ARABIC = {
+  'ghazali': 'غزالي',
+  'razi': 'رازي',
+  'ibn sina': 'ابن سينا',
+  'sina': 'سينا',
+  'ibn rushd': 'ابن رشد',
+  'rushd': 'رشد',
+  'tabari': 'طبري',
+  'ashari': 'اشعري',
+  'maturidi': 'ماتريدي',
+  'baqillani': 'باقلاني',
+  'juwayni': 'جويني',
+  'suyuti': 'سيوطي',
+  'qurtubi': 'قرطبي',
+  'zamakhshari': 'زمخشري',
+  'kindi': 'كندي',
+  'farabi': 'فارابي',
+  'khaldun': 'خلدون',
+  'bayhaqi': 'بيهقي',
+  'dhahabi': 'ذهبي',
+  'ibn kathir': 'ابن كثير',
+  'kathir': 'كثير',
+  'ibn hajar': 'ابن حجر',
+  'hajar': 'حجر',
+  'nawawi': 'نووي',
+  'suhrawardi': 'سهروردي',
+  'shafii': 'شافعي',
+  'shafi': 'شافعي',
+  'hanafi': 'حنفي',
+  'maliki': 'مالكي',
+  'hanbali': 'حنبلي',
+  'baghdadi': 'بغدادي',
+  'isfahani': 'اصفهاني',
+  'raghib': 'راغب',
+  'taftazani': 'تفتازاني',
+  'amidi': 'امدي',
+  'jurjani': 'جرجاني',
+  'taymiyya': 'تيمية',
+  'taymiyyah': 'تيمية',
+  'taimiyya': 'تيمية',
+  'ibn taymiyya': 'ابن تيمية',
+  'ibn taymiyyah': 'ابن تيمية',
+  'qayyim': 'قيم',
+  'ibn al-qayyim': 'ابن القيم',
+  'ibn qayyim': 'ابن قيم'
+};
+
+const GENERIC_SEARCH_TOKENS = new Set(['ibn', 'bin', 'abu', 'abi', 'aba', 'al', 'el', 'bint', 'umm', 'kitab', 'risala', 'juz', 'sharh']);
+
+function normalizeTranslitQuery(text) {
+  if (!text) return '';
+  let t = text.toLowerCase();
+  
+  for (const [k, v] of Object.entries(LATIN_SCHOLAR_ALIASES)) {
+    const re = new RegExp('\\b' + k + '\\b', 'g');
+    t = t.replace(re, v);
+  }
+
+  // Strip diacritics
+  t = t.replace(/[āáàâä]/g, 'a')
+       .replace(/[īíìîï]/g, 'i')
+       .replace(/[ūúùûü]/g, 'u')
+       .replace(/[ṭţ]/g, 't')
+       .replace(/[ṣş]/g, 's')
+       .replace(/[ḍ]/g, 'd')
+       .replace(/[ẓ]/g, 'z')
+       .replace(/[ḥ]/g, 'h');
+
+  // Strip article prefixes if hyphenated or followed by space
+  t = t.replace(/\\b(al|el|ad|ar|as|at|az|an|ash)[-\\s]/g, ' ');
+  t = t.replace(/\\b(al|el)\\b/g, ' ');
+
+  // Remove apostrophes, hyphens, and ayn marks without adding spaces
+  t = t.replace(/['`‘'ʿʾ\\-_.]/g, '');
+
+  t = t.replace(/aim/g, 'aym');
+  t = t.replace(/iyyah/g, 'iya')
+       .replace(/iyya/g, 'iya')
+       .replace(/ou/g, 'u')
+       .replace(/oo/g, 'u')
+       .replace(/ee/g, 'i')
+       .replace(/aa/g, 'a');
+
+  // OpenITI 'c' represents Ayn (ع) e.g. Ashcari -> ashari, Cabd -> abd
+  t = t.replace(/c/g, '');
+
+  // Arabic script normalization
+  t = t.replace(/[ً-ٰٟ]/g, '')
+       .replace(/[إأآٱ]/g, 'ا')
+       .replace(/ى/g, 'ي')
+       .replace(/ة/g, 'ه');
+
+  return t.replace(/[^a-z0-9\\u0600-\\u06FF\\s]/g, ' ').replace(/\\s+/g, ' ').trim();
+}
+
 async function loadOpenItiResults(query = '') {
   const listEl = document.getElementById('openiti-results-list');
   if (!listEl) return;
-  listEl.innerHTML = '<div style="padding: 1.25rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Searching classical corpus...</div>';
+  listEl.innerHTML = '<div style="padding: 1.25rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Searching 7,123 classical works...</div>';
 
   const corpus = await loadEmbeddedCorpus();
   let results = [];
 
-  const q = query.trim().toLowerCase();
-  if (q.length > 1) {
-    results = corpus.filter(item => {
-      const full = `${item.title_ar || ''} ${item.title_lat || ''} ${item.author_ar || ''} ${item.author_lat || ''} ${item.date || ''}`.toLowerCase();
-      return full.includes(q);
-    });
+  const rawQ = (query || '').trim().toLowerCase();
+  const qNorm = normalizeTranslitQuery(query);
+  const qTokens = qNorm.split(' ').filter(Boolean);
+  const coreTokens = qTokens.filter(tok => !GENERIC_SEARCH_TOKENS.has(tok));
+  const activeTokens = coreTokens.length > 0 ? coreTokens : qTokens;
+
+  // Cross-script Arabic terms
+  const arTerms = [];
+  for (const [k, v] of Object.entries(SCHOLAR_TRANSLIT_TO_ARABIC)) {
+    if (rawQ.includes(k) || qNorm.includes(k)) {
+      arTerms.push(v);
+    }
+  }
+
+  if (activeTokens.length > 0 || arTerms.length > 0 || rawQ.length > 1) {
+    const scored = [];
+    for (const item of corpus) {
+      const authorLatNorm = normalizeTranslitQuery(item.author_lat || '');
+      const titleLatNorm = normalizeTranslitQuery(item.title_lat || '');
+      const authorArNorm = normalizeTranslitQuery(item.author_ar || '');
+      const titleArNorm = normalizeTranslitQuery(item.title_ar || '');
+      const fullLat = `${authorLatNorm} ${titleLatNorm} ${normalizeTranslitQuery(item.raw_url || '')}`;
+      const fullAr = `${authorArNorm} ${titleArNorm}`;
+
+      let score = 0;
+
+      // Check core tokens in Latin
+      const authorHit = activeTokens.length > 0 && activeTokens.every(tok => authorLatNorm.includes(tok));
+      const titleHit = activeTokens.length > 0 && activeTokens.every(tok => titleLatNorm.includes(tok));
+      const fullHit = activeTokens.length > 0 && activeTokens.every(tok => fullLat.includes(tok));
+
+      if (authorHit) score += 300;
+      else if (titleHit) score += 150;
+      else if (fullHit) score += 60;
+
+      // Exact word token match bonus (e.g. 'sina' matches 'Ibn Sina' over 'Ibn Sinan')
+      const authWords = new Set(authorLatNorm.split(' '));
+      const titleWords = new Set(titleLatNorm.split(' '));
+      for (const tok of activeTokens) {
+        if (authWords.has(tok)) score += 200;
+        if (titleWords.has(tok)) score += 100;
+      }
+      if (authorLatNorm.includes(qNorm)) score += 150;
+
+      // Arabic cross-script match
+      if (arTerms.length > 0) {
+        if (arTerms.some(ar => authorArNorm.includes(ar))) score += 250;
+        else if (arTerms.some(ar => titleArNorm.includes(ar))) score += 120;
+        else if (arTerms.some(ar => fullAr.includes(ar))) score += 50;
+      }
+
+      // Direct substring match
+      if (rawQ.length > 1) {
+        if ((item.author_lat || '').toLowerCase().includes(rawQ)) score += 200;
+        if ((item.title_lat || '').toLowerCase().includes(rawQ)) score += 100;
+        if ((item.author_ar || '').includes(rawQ)) score += 200;
+        if ((item.title_ar || '').includes(rawQ)) score += 100;
+      }
+
+      if (score > 0) {
+        scored.push({ score, item });
+      }
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    results = scored.map(s => s.item).slice(0, 50);
   } else {
     results = corpus.slice(0, 30);
   }
 
-  // If online, also attempt fast server search to merge
+  // If online, also query server API to merge any additional results
   try {
-    const remoteRes = await fetchWithTimeout(getApiUrl(`/api/translation/openiti/search?q=${encodeURIComponent(query)}&limit=25`), {}, 1000);
+    const remoteRes = await fetchWithTimeout(getApiUrl(`/api/translation/openiti/search?q=${encodeURIComponent(query)}&limit=50`), {}, 1500);
     if (remoteRes.ok) {
       const remData = await remoteRes.json();
       const remItems = remData.results || [];
@@ -2290,6 +2469,7 @@ async function loadOpenItiResults(query = '') {
         if (!seenIds.has(item.id)) {
           results.push(item);
           seenIds.add(item.id);
+          if (results.length >= 60) break;
         }
       }
     }
