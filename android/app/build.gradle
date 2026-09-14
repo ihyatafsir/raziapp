@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace 'com.ihyatafsir.raziapp'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.ihyatafsir.raziapp"
         minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "2.3.0"
+        targetSdk 36
+        versionCode 231
+        versionName "2.3.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -20,12 +20,19 @@ android {
         }
     }
 
+    def localProps = new Properties()
+    def localPropsFile = rootProject.file('local.properties')
+    if (localPropsFile.exists()) {
+        localPropsFile.withReader('UTF-8') { reader -> localProps.load(reader) }
+    }
+
     signingConfigs {
         release {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            def storePath = localProps.getProperty('RELEASE_STORE_FILE', System.getenv('RELEASE_STORE_FILE') ?: 'release-upload.keystore')
+            storeFile file(storePath)
+            storePassword localProps.getProperty('RELEASE_STORE_PASSWORD', System.getenv('RELEASE_STORE_PASSWORD') ?: '')
+            keyAlias localProps.getProperty('RELEASE_KEY_ALIAS', System.getenv('RELEASE_KEY_ALIAS') ?: 'upload')
+            keyPassword localProps.getProperty('RELEASE_KEY_PASSWORD', System.getenv('RELEASE_KEY_PASSWORD') ?: '')
         }
     }
     buildTypes {
