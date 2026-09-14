@@ -52,6 +52,11 @@
           <svg class="svg-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
         </button>
 
+                <!-- AynEngine AI Translation Studio Trigger -->
+        <button class="icon-btn translation-studio-btn" id="btn-open-translation-studio" title="AynEngine AI Translation Studio (OpenITI / Library / Upload)">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><path d="M8 7h8"></path><path d="M8 11h5"></path></svg>
+        </button>
+
         <!-- Server Connection Modal Trigger -->
         <button class="icon-btn server-status-btn" id="btn-open-server-modal" title="Scholarly Engine & Server Settings" style="position: relative;">
           <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -516,7 +521,167 @@
       </div>
     </div>
 
+        <!-- AynEngine AI Translation Studio Modal -->
+    <div class="modal-backdrop" id="modal-translation-studio">
+      <div class="mobile-modal-panel" style="max-width: 680px;">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <h2 class="modal-title">AynEngine Translation Studio</h2>
+            <span class="modal-subtitle">v5.1 Sovereign Quad-Lexical RAG Edition</span>
+          </div>
+          <button class="icon-btn" id="btn-close-translation-studio" aria-label="Close Translation Studio">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <!-- Studio Source Tabs -->
+        <div class="studio-tabs-bar">
+          <button class="studio-tab-btn active" data-tab="openiti" id="tab-btn-openiti">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>OpenITI Corpus (7,123)</span>
+          </button>
+          <button class="studio-tab-btn" data-tab="local" id="tab-btn-local">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Local Library</span>
+          </button>
+          <button class="studio-tab-btn" data-tab="upload" id="tab-btn-upload">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload PDF / Text</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: OpenITI Search -->
+        <div class="studio-tab-content" id="tab-content-openiti">
+          <div class="search-box" style="margin-bottom: 0.85rem;">
+            <input type="text" class="search-input" id="openiti-search-input" placeholder="Search 7,123 classical works by title, author, or Hijri date (e.g. razi, ghazali, 0505, تفسير)...">
+          </div>
+          <div class="openiti-results-list" id="openiti-results-list">
+            <!-- Populated dynamically with classical book cards -->
+          </div>
+        </div>
+
+        <!-- Tab 2: Local Library Selection -->
+        <div class="studio-tab-content" id="tab-content-local" style="display: none;">
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="studio-label">Select Classical Islamic Work:</label>
+            <select class="studio-select" id="local-source-select">
+              <option value="">Loading local texts...</option>
+            </select>
+          </div>
+          <div id="local-source-preview" class="manuscript-preview-box"></div>
+        </div>
+
+        <!-- Tab 3: Upload File -->
+        <div class="studio-tab-content" id="tab-content-upload" style="display: none;">
+          <div class="upload-dropzone" id="upload-dropzone">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 36px; height: 36px; color: var(--brand-gold); margin-bottom: 0.5rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="12" y2="12"></line><line x1="15" y1="15" x2="12" y2="12"></line></svg>
+            <p style="margin: 0; font-size: 0.9rem; font-weight: 600;">Choose a file or drag and drop</p>
+            <p style="margin: 4px 0 0; font-size: 0.75rem; color: var(--text-muted);">Supports PDF (via pdftotext), TXT, and MD files</p>
+            <input type="file" id="upload-file-input" accept=".pdf,.txt,.md" style="display: none;">
+          </div>
+          <div id="upload-file-preview" class="manuscript-preview-box" style="display: none;"></div>
+        </div>
+
+        <!-- Translation Parameters -->
+        <div class="studio-config-section">
+          <div class="studio-config-row">
+            <div class="studio-field">
+              <label class="studio-label">Target Language:</label>
+              <select class="studio-select" id="studio-target-lang">
+                <option value="en">English (Scholarly)</option>
+                <option value="sq">Albanian (Shqip)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="tr">Turkish (Turkce)</option>
+                <option value="fr">French (Francais)</option>
+              </select>
+            </div>
+            <div class="studio-field">
+              <label class="studio-label">Edition Format:</label>
+              <select class="studio-select" id="studio-edition-mode">
+                <option value="bilingual">Bilingual Apparatus Edition (Arabic + Scholia + Translation)</option>
+                <option value="pure">Pure Target Language Edition (Authorial Voice)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="studio-config-row">
+            <div class="studio-field">
+              <label class="studio-label">AI Engine Provider:</label>
+              <select class="studio-select" id="studio-ai-engine">
+                <option value="deepseek">DeepSeek Flash v4.1 (with Ollama fallback)</option>
+                <option value="ollama">Local Ollama (Offline Qwen/Gemma)</option>
+              </select>
+            </div>
+            <div class="studio-field">
+              <label class="studio-label">Scope / Quick Test:</label>
+              <select class="studio-select" id="studio-chunk-limit">
+                <option value="3">Quick Sample Mode (First 3 Sections)</option>
+                <option value="10">Expanded Sample (First 10 Sections)</option>
+                <option value="0">Complete Manuscript (Full Codex)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- RAG Lexical Glossary Checkbox -->
+          <div class="studio-checkbox-row">
+            <label class="studio-checkbox-label">
+              <input type="checkbox" id="studio-include-glossary" checked>
+              <span>Append Lexicographical Concordance & Theological Glossary on Final Pages (المعجم الاصطلاحي)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Selected Book Metadata Summary -->
+        <div id="studio-selection-summary" class="studio-selection-summary" style="display: none;">
+          <div class="summary-meta">
+            <span class="summary-ar-title" id="summary-ar-title"></span>
+            <span class="summary-en-title" id="summary-en-title"></span>
+            <span class="summary-author" id="summary-author"></span>
+          </div>
+        </div>
+
+        <!-- Live Job Monitor Panel -->
+        <div id="studio-monitor-panel" class="studio-monitor-panel" style="display: none;">
+          <div class="monitor-header">
+            <span class="monitor-status-badge" id="monitor-status-badge">Translating</span>
+            <span class="monitor-progress-text" id="monitor-progress-text">0%</span>
+          </div>
+          <div class="studio-progress-track">
+            <div class="studio-progress-fill" id="studio-progress-fill" style="width: 0%;"></div>
+          </div>
+          <div class="monitor-roots-box">
+            <span class="roots-label">Active RAG Roots:</span>
+            <div class="roots-tags" id="monitor-roots-tags"></div>
+          </div>
+          <div class="monitor-live-preview" id="monitor-live-preview">
+            <em>Awaiting translation stream...</em>
+          </div>
+        </div>
+
+        <!-- Actions Footer -->
+        <div class="modal-footer" style="display: flex; gap: 0.75rem; padding: 1rem 1.25rem;">
+          <button class="version-toggle-btn" id="btn-studio-cancel" style="flex: 1; justify-content: center; padding: 0.75rem;">
+            Cancel
+          </button>
+          <button class="version-toggle-btn active" id="btn-studio-start" style="flex: 2; justify-content: center; padding: 0.75rem; background: var(--brand-gold); color: #000; font-weight: 700;">
+            Start AynEngine Translation
+          </button>
+          <button class="version-toggle-btn active" id="btn-studio-open-reader" style="flex: 2; justify-content: center; padding: 0.75rem; background: var(--brand-emerald); color: #fff; font-weight: 700; display: none;">
+            Read in RaziApp Now
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Backdrop overlay for mobile drawers -->
+        <!-- Reader Edge Swipe Visual Indicators -->
+    <div class="reader-swipe-indicator left" id="reader-swipe-left">
+      <svg class="svg-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </div>
+    <div class="reader-swipe-indicator right" id="reader-swipe-right">
+      <svg class="svg-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </div>
+
     <div class="drawer-backdrop" id="drawer-backdrop"></div>
 
   </div>

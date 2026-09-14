@@ -342,14 +342,19 @@ def get_available_voices():
 @app.head("/api/download/apk")
 def download_android_apk():
     """Serves the compiled RaziApp Android APK package."""
-    apk_path = BASE_DIR / "raziapp-v2.3.0.apk"
-    if not apk_path.exists():
-        apk_path = BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
-    if not apk_path.exists():
+    candidates = [
+        BASE_DIR / "raziapp-v2.3.1.apk",
+        BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk",
+        BASE_DIR / "public" / "raziapp.apk",
+        BASE_DIR / "raziapp-v2.3.0.apk",
+        BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+    ]
+    apk_path = next((p for p in candidates if p.exists()), None)
+    if not apk_path:
         raise HTTPException(status_code=404, detail="APK binary not found.")
     return FileResponse(
         path=str(apk_path),
-        filename="raziapp-v2.3.0.apk",
+        filename="raziapp-v2.3.1.apk",
         media_type="application/vnd.android.package-archive"
     )
 

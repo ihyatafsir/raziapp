@@ -146,6 +146,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAudioEngine();
   initScrollProgressTracker();
   initKeyboardNavigation();
+  initReaderSwipeNavigation();
+  initTranslationStudio();
   await loadLibrary();
 });
 
