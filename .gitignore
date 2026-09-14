@@ -46,3 +46,7 @@ android/app/src/main/assets/epubs/
 # Keystores
 *.keystore
 
+
+# Data & Uploads
+data
+uploads/

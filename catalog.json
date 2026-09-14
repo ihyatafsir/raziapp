@@ -1,5 +1,27 @@
 [
   {
+    "id": "ayn_al_maqsad_al_asna_test_codex_en_bilingual",
+    "title": "Al-Maqsad al-Asna Test Codex (Bilingual Apparatus Edition)",
+    "arabic_title": "المقصد الأسنى",
+    "author": "Abu Hamid al-Ghazali",
+    "author_key": "abu_hamid_al_ghazali",
+    "topic_key": "theology_kalam",
+    "topic_name": "Kalam & Philosophical Theology",
+    "topic_arabic": "علم الكلام وأصول الدين",
+    "pillar_key": "theology_kalam",
+    "pillar_name": "Kalam & Dialectics",
+    "format": "bilingual",
+    "version": "v5",
+    "is_v4_v5": true,
+    "is_bilingual": true,
+    "is_pure_en": false,
+    "is_sq": false,
+    "filename": "ayn_al_maqsad_al_asna_test_codex_en_bilingual.epub",
+    "path": "/home/absolut7/Documents/news/raziapp/epubs/ayn_al_maqsad_al_asna_test_codex_en_bilingual.epub",
+    "chapters_count": 2,
+    "source": "AynEngine AI Studio v5.1"
+  },
+  {
     "id": "codex_1",
     "filename": "al_matalib_al_aliyah_complete_en.epub",
     "path": "/home/absolut7/.gemini/antigravity-ide/scratch/raziapp/epubs/al_matalib_al_aliyah_complete_en.epub",

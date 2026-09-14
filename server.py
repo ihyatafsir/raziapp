@@ -27,6 +27,10 @@ from pydantic import BaseModel
 from epub_parser import EpubParser
 from tts_engine import TtsEngine
 from ai_assistant import RaziAiAssistant
+import re
+import time
+import base64
+from translation_studio import translation_studio
 
 BASE_DIR = Path(__file__).parent.resolve()
 PUBLIC_DIR = BASE_DIR / "public"
@@ -67,6 +71,22 @@ class TtsRequest(BaseModel):
     text: str
     voice: str = "hamza_yusuf"
     rate: Optional[str] = None
+
+class TranslationStartRequest(BaseModel):
+    source_type: str = "openiti"  # "openiti", "local", "upload", "direct"
+    source_identifier: str
+    author: str = "Classical Author"
+    book_title_ar: str = "كتاب"
+    book_title_en: str = "Treatise"
+    target_lang: str = "en"  # "en", "sq", "de", "tr", "fr"
+    edition_mode: str = "bilingual"  # "bilingual" or "pure"
+    include_rag_glossary: bool = True
+    max_chunks: Optional[int] = None
+
+class UploadFileRequest(BaseModel):
+    filename: str
+    content_base64: Optional[str] = None
+    content_text: Optional[str] = None
 
 class AiAskRequest(BaseModel):
     prompt: str
@@ -332,6 +352,97 @@ def download_android_apk():
         filename="raziapp-v2.3.0.apk",
         media_type="application/vnd.android.package-archive"
     )
+
+
+# --- Translation Studio Endpoints ---
+@app.get("/api/translation/openiti/search")
+def search_openiti_catalog(q: str = Query("", min_length=0), limit: int = 50):
+    """Searches 7,123 classical Islamic manuscripts from OpenITI GitHub catalog."""
+    results = translation_studio.search_openiti(q, limit=limit)
+    return {
+        "query": q,
+        "total_results": len(results),
+        "results": results
+    }
+
+@app.get("/api/translation/openiti/preview")
+def preview_openiti_manuscript(url: str = Query(...)):
+    """Fetches and previews first 1,500 characters of clean manuscript text."""
+    try:
+        clean_text = translation_studio.fetch_openiti_text(url)
+        return {
+            "url": url,
+            "char_count": len(clean_text),
+            "preview": clean_text[:1500]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch OpenITI text: {e}")
+
+@app.get("/api/translation/local_sources")
+def get_local_translation_sources():
+    """Lists pre-indexed classical texts in local library."""
+    sources = translation_studio.get_local_sources()
+    return {"sources": sources}
+
+@app.post("/api/translation/upload")
+def upload_manuscript_file(req: UploadFileRequest):
+    """Uploads a PDF, TXT, or MD manuscript."""
+    uploads_dir = BASE_DIR / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_id = f"{int(time.time())}_{re.sub(r'[^a-zA-Z0-9._-]', '_', req.filename)}"
+    out_file = uploads_dir / file_id
+    
+    if req.content_base64:
+        b64_data = req.content_base64
+        if "," in b64_data:
+            b64_data = b64_data.split(",", 1)[1]
+        raw_bytes = base64.b64decode(b64_data)
+        out_file.write_bytes(raw_bytes)
+    elif req.content_text:
+        out_file.write_text(req.content_text, encoding="utf-8")
+    else:
+        raise HTTPException(status_code=400, detail="Missing file content")
+        
+    try:
+        extracted = translation_studio.extract_uploaded_file(out_file)
+        return {
+            "success": True,
+            "file_id": file_id,
+            "filename": req.filename,
+            "char_count": len(extracted),
+            "preview": extracted[:1500]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File extraction failed: {e}")
+
+@app.post("/api/translation/start")
+def start_translation(req: TranslationStartRequest):
+    """Starts background AynEngine AI translation job."""
+    try:
+        job_id = translation_studio.start_translation_job(
+            source_type=req.source_type,
+            source_identifier=req.source_identifier,
+            author=req.author,
+            book_title_ar=req.book_title_ar,
+            book_title_en=req.book_title_en,
+            target_lang=req.target_lang,
+            edition_mode=req.edition_mode,
+            include_rag_glossary=req.include_rag_glossary,
+            max_chunks=req.max_chunks
+        )
+        return {"success": True, "job_id": job_id, "status": "queued"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/translation/status/{job_id}")
+def get_translation_status(job_id: str):
+    """Polls translation job progress and generated book ID."""
+    status = translation_studio.get_job_status(job_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return status
+
 
 # Mount Frontend
 
