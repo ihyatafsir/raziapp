@@ -2239,3 +2239,38 @@ button {
   opacity: 1;
   transform: translateY(-50%) scale(1.05);
 }
+
+/* Reader Smooth Slide Transition Animations */
+.slide-out-left {
+  animation: readerSlideOutLeft 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+.slide-in-right {
+  animation: readerSlideInRight 0.26s cubic-bezier(0, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+.slide-out-right {
+  animation: readerSlideOutRight 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+.slide-in-left {
+  animation: readerSlideInLeft 0.26s cubic-bezier(0, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes readerSlideOutLeft {
+  0% { transform: translate3d(0, 0, 0); opacity: 1; }
+  100% { transform: translate3d(-40px, 0, 0); opacity: 0; }
+}
+@keyframes readerSlideInRight {
+  0% { transform: translate3d(40px, 0, 0); opacity: 0; }
+  100% { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+@keyframes readerSlideOutRight {
+  0% { transform: translate3d(0, 0, 0); opacity: 1; }
+  100% { transform: translate3d(40px, 0, 0); opacity: 0; }
+}
+@keyframes readerSlideInLeft {
+  0% { transform: translate3d(-40px, 0, 0); opacity: 0; }
+  100% { transform: translate3d(0, 0, 0); opacity: 1; }
+}

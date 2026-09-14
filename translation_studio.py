@@ -73,6 +73,7 @@ class AynTranslationStudio:
     def _load_env(self):
         env_files = [
             self.base_dir / ".env",
+            Path("/home/absolut7/Documents/26apps/aynengineai/.env"),
             Path("/home/absolut7/.gemini/antigravity-ide/scratch/aynengineaicoding/.env"),
             Path("/home/absolut7/.gemini/antigravity/scratch/translation_engine_framework/.env")
         ]

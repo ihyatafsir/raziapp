@@ -460,6 +460,15 @@ function initEventListeners() {
   document.getElementById('btn-exit-epub-mode')?.addEventListener('click', exitEpubMode);
   document.getElementById('btn-epub-theme-quick')?.addEventListener('click', cycleTheme);
 
+  // AynEngine AI Translation Studio Openers
+  document.getElementById('mb-btn-aynengine')?.addEventListener('click', openTranslationStudio);
+  document.getElementById('banner-open-studio')?.addEventListener('click', openTranslationStudio);
+  document.getElementById('btn-banner-launch-studio')?.addEventListener('click', (e) => { e.stopPropagation(); openTranslationStudio(); });
+  document.getElementById('btn-open-translation-studio')?.addEventListener('click', openTranslationStudio);
+
+  // Standalone Whole-Codex EPUB Share
+  document.getElementById('btn-share-epub')?.addEventListener('click', shareCurrentBookEpub);
+
   // In-Book Search
   document.getElementById('btn-open-search')?.addEventListener('click', openSearchModal);
   document.getElementById('btn-close-search')?.addEventListener('click', closeSearchModal);
@@ -996,8 +1005,9 @@ function updateBackdrop() {
   const isAiOpen = document.getElementById('ai-drawer')?.classList.contains('open');
   const isLibraryOpen = document.getElementById('modal-library')?.classList.contains('active');
   const isSearchOpen = document.getElementById('modal-search')?.classList.contains('active');
+  const isStudioOpen = document.getElementById('modal-translation-studio')?.classList.contains('active');
 
-  const shouldBeActive = Boolean(isTocOpen || isAiOpen || isLibraryOpen || isSearchOpen);
+  const shouldBeActive = Boolean(isTocOpen || isAiOpen || isLibraryOpen || isSearchOpen || isStudioOpen);
   if (bd) {
     bd.classList.toggle('active', shouldBeActive);
   }
@@ -1008,6 +1018,8 @@ function closeAllDrawers() {
   document.getElementById('ai-drawer')?.classList.remove('open');
   document.getElementById('modal-library')?.classList.remove('active');
   document.getElementById('modal-search')?.classList.remove('active');
+  document.getElementById('modal-translation-studio')?.classList.remove('active');
+  document.getElementById('modal-server')?.classList.remove('active');
   updateBackdrop();
 }
 
@@ -1624,13 +1636,13 @@ function renderChapterContent(paragraphs) {
   html += `
     <nav style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding: 1rem 0; border-top: 1px solid var(--border-ui);">
       ${prevChapter ? `
-        <button class="card-action-btn" style="padding: 0.5rem 0.85rem;" onclick="loadChapter('${prevChapter.href}', ${state.activeChapterIndex - 1})">
+        <button class="card-action-btn" style="padding: 0.5rem 0.85rem;" onclick="slideChapter('prev')">
           <svg class="svg-icon" viewBox="0 0 24 24" style="width: 13px; height: 13px;"><polyline points="15 18 9 12 15 6"/></svg>
           <span>Prev</span>
         </button>
       ` : '<div></div>'}
       ${nextChapter ? `
-        <button class="card-action-btn" style="padding: 0.5rem 0.85rem;" onclick="loadChapter('${nextChapter.href}', ${state.activeChapterIndex + 1})">
+        <button class="card-action-btn" style="padding: 0.5rem 0.85rem;" onclick="slideChapter('next')">
           <span>Next</span>
           <svg class="svg-icon" viewBox="0 0 24 24" style="width: 13px; height: 13px;"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -2051,4 +2063,581 @@ function showToast(msg) {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 300);
   }, 2200);
+}
+
+
+// ==========================================================================
+// READER MODE TOUCH SWIPE & SMOOTH HORIZONTAL SLIDE TRANSITIONS
+// ==========================================================================
+
+function pulseSwipeIndicator(dir) {
+  const el = document.getElementById(dir === 'left' ? 'reader-swipe-left' : 'reader-swipe-right');
+  if (el) {
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 250);
+  }
+  if (window.AndroidBridge && typeof window.AndroidBridge.vibrate === 'function') {
+    try { window.AndroidBridge.vibrate(8); } catch (_) {}
+  }
+}
+
+window.slideChapter = async function(direction) {
+  if (!state.toc || state.toc.length === 0) return;
+  const bodyEl = document.getElementById('chapter-content-body');
+  const viewport = document.getElementById('reader-viewport');
+
+  if (direction === 'next') {
+    if (state.activeChapterIndex >= state.toc.length - 1) {
+      showToast('Final section of this codex reached');
+      return;
+    }
+    const nextToc = state.toc[state.activeChapterIndex + 1];
+    pulseSwipeIndicator('right');
+    if (bodyEl) {
+      bodyEl.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left');
+      bodyEl.classList.add('slide-out-left');
+    }
+    setTimeout(async () => {
+      await window.loadChapter(nextToc.href, state.activeChapterIndex + 1);
+      if (viewport) viewport.scrollTop = 0;
+      if (bodyEl) {
+        bodyEl.classList.remove('slide-out-left');
+        bodyEl.classList.add('slide-in-right');
+        setTimeout(() => bodyEl.classList.remove('slide-in-right'), 300);
+      }
+    }, 140);
+  } else if (direction === 'prev') {
+    if (state.activeChapterIndex <= 0) {
+      showToast('First section of this codex reached');
+      return;
+    }
+    const prevToc = state.toc[state.activeChapterIndex - 1];
+    pulseSwipeIndicator('left');
+    if (bodyEl) {
+      bodyEl.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left');
+      bodyEl.classList.add('slide-out-right');
+    }
+    setTimeout(async () => {
+      await window.loadChapter(prevToc.href, state.activeChapterIndex - 1);
+      if (viewport) viewport.scrollTop = 0;
+      if (bodyEl) {
+        bodyEl.classList.remove('slide-out-right');
+        bodyEl.classList.add('slide-in-left');
+        setTimeout(() => bodyEl.classList.remove('slide-in-left'), 300);
+      }
+    }, 140);
+  }
+};
+
+function initReaderSwipeNavigation() {
+  const viewport = document.getElementById('reader-viewport');
+  if (!viewport) return;
+
+  let startX = 0;
+  let startY = 0;
+  let deltaX = 0;
+  let deltaY = 0;
+  let isSwiping = false;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || state.isEpubMode) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    deltaX = 0;
+    deltaY = 0;
+    isSwiping = true;
+  }, { passive: true });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (!isSwiping || e.touches.length !== 1 || state.isEpubMode) return;
+    deltaX = e.touches[0].clientX - startX;
+    deltaY = e.touches[0].clientY - startY;
+  }, { passive: true });
+
+  viewport.addEventListener('touchend', () => {
+    if (!isSwiping || state.isEpubMode) return;
+    isSwiping = false;
+
+    // Detect definitive horizontal swipe (horizontal movement > vertical movement * 1.3 and > 45px)
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 45) {
+      if (deltaX < 0) {
+        // Swipe left -> next chapter/page
+        window.slideChapter('next');
+      } else {
+        // Swipe right -> prev chapter/page
+        window.slideChapter('prev');
+      }
+    }
+  }, { passive: true });
+}
+
+// ==========================================================================
+// STANDALONE WHOLE-EPUB PACKAGING & NATIVE SHARING ENGINE
+// ==========================================================================
+
+async function shareCurrentBookEpub() {
+  if (!state.activeBookId) {
+    showToast('Please select a book from the library first');
+    return;
+  }
+
+  showToast('Packaging offline Codex EPUB archive...');
+
+  try {
+    const store = await getOfflineStore();
+    const bookData = store ? store[state.activeBookId] : null;
+    const book = state.activeBook || {
+      id: state.activeBookId,
+      title: 'Classical Masterwork',
+      author: 'Classical Author'
+    };
+
+    if (!window.clientEpubEngine) {
+      throw new Error('EPUB Engine not initialized');
+    }
+
+    const { blob, base64, filename } = await window.clientEpubEngine.exportEpubFromStore(book, bookData);
+
+    let targetBlob = blob;
+    if (!targetBlob && base64 && typeof atob !== 'undefined') {
+      try {
+        const byteChars = atob(base64);
+        const byteNumbers = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) {
+          byteNumbers[i] = byteChars.charCodeAt(i);
+        }
+        targetBlob = new Blob([byteNumbers], { type: 'application/epub+zip' });
+      } catch (_) {}
+    }
+
+    // 1. Android Native Share Sheet via FileProvider
+    if (window.AndroidBridge && typeof window.AndroidBridge.shareEpubFile === 'function') {
+      window.AndroidBridge.shareEpubFile(book.title, filename, base64);
+      showToast('Opening native share sheet...');
+      return;
+    }
+
+    // 2. Web Share API with File support
+    const epubFile = new File([targetBlob], filename, { type: 'application/epub+zip' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [epubFile] })) {
+      await navigator.share({
+        title: book.title,
+        text: `${book.title} by ${book.author} — Sovereign Classical Codex (RaziApp)`,
+        files: [epubFile]
+      });
+      showToast('Shared successfully');
+      return;
+    }
+
+    // 3. Browser direct download fallback
+    const url = targetBlob ? URL.createObjectURL(targetBlob) : ('data:application/epub+zip;base64,' + base64);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 1000);
+    showToast(`Downloaded ${filename}`);
+  } catch (err) {
+    console.error('Error sharing EPUB:', err);
+    showToast('Failed to package EPUB: ' + (err.message || 'unknown error'));
+  }
+}
+
+// ==========================================================================
+// AYNENGINE AI TRANSLATION STUDIO v5.1 (QUAD-LEXICAL ACTIVE RAG)
+// ==========================================================================
+
+let studioSelectedSource = null;
+let studioActiveJobId = null;
+let studioPollTimer = null;
+
+function openTranslationStudio() {
+  closeAllDrawers();
+  const modal = document.getElementById('modal-translation-studio');
+  if (modal) {
+    modal.classList.add('active');
+    updateBackdrop();
+  }
+  const openitiList = document.getElementById('openiti-results-list');
+  if (openitiList && (!openitiList.children || openitiList.children.length === 0)) {
+    loadOpenItiResults('');
+  }
+}
+
+function closeTranslationStudio() {
+  const modal = document.getElementById('modal-translation-studio');
+  if (modal) {
+    modal.classList.remove('active');
+    updateBackdrop();
+  }
+}
+
+window.openTranslationStudio = openTranslationStudio;
+window.closeTranslationStudio = closeTranslationStudio;
+
+async function loadOpenItiResults(query = '') {
+  const listEl = document.getElementById('openiti-results-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Searching OpenITI corpus (7,123 classical works)...</div>';
+
+  try {
+    const res = await fetchWithTimeout(getApiUrl(`/api/translation/openiti/search?q=${encodeURIComponent(query)}&limit=30`), {}, 4500);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const results = data.results || [];
+
+    if (results.length === 0) {
+      listEl.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No classical works matched your query in OpenITI.</div>';
+      return;
+    }
+
+    let html = '';
+    results.forEach((item, idx) => {
+      const isSelected = studioSelectedSource && studioSelectedSource.identifier === item.raw_url;
+      html += `
+        <div class="openiti-card ${isSelected ? 'selected' : ''}" data-idx="${idx}" onclick="selectOpenItiItem(${idx})">
+          <div class="openiti-meta">
+            <div class="openiti-title-ar">${escapeHtml(item.title_ar || 'مخطوطة كلاسيكية')}</div>
+            <div class="openiti-title-lat">${escapeHtml(item.title_lat || 'Classical Manuscript')}</div>
+            <div class="openiti-sub">${escapeHtml(item.author_ar || item.author_lat || 'Classical Scholar')} · AH ${escapeHtml(item.date || '—')} · ${Math.round(parseInt(item.char_length || '0', 10) / 1000)}k chars</div>
+          </div>
+          <button class="openiti-select-btn" type="button">
+            ${isSelected ? 'Selected' : 'Select'}
+          </button>
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = html;
+    window._lastOpenItiResults = results;
+  } catch (e) {
+    listEl.innerHTML = `<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Could not connect to OpenITI index. Ensure server is online or use Local Library tab.</div>`;
+  }
+}
+
+window.selectOpenItiItem = function(idx) {
+  const results = window._lastOpenItiResults || [];
+  const item = results[idx];
+  if (!item) return;
+
+  studioSelectedSource = {
+    type: 'openiti',
+    identifier: item.raw_url || item.url,
+    author: item.author_lat || item.author_ar || 'Classical Scholar',
+    title_ar: item.title_ar || 'كتاب كلاسيكي',
+    title_en: item.title_lat || 'Classical Treatise'
+  };
+
+  updateStudioSelectionSummary();
+
+  const cards = document.querySelectorAll('.openiti-card');
+  cards.forEach((c, i) => {
+    const isThis = i === idx;
+    c.classList.toggle('selected', isThis);
+    const btn = c.querySelector('.openiti-select-btn');
+    if (btn) btn.textContent = isThis ? 'Selected' : 'Select';
+  });
+};
+
+async function loadLocalStudioSources() {
+  const selectEl = document.getElementById('local-source-select');
+  if (!selectEl) return;
+  selectEl.innerHTML = '<option value="">Loading local texts...</option>';
+
+  try {
+    const res = await fetchWithTimeout(getApiUrl('/api/translation/local_sources'), {}, 3500);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const sources = data.sources || [];
+
+    if (sources.length === 0) {
+      selectEl.innerHTML = '<option value="">No local raw texts found</option>';
+      return;
+    }
+
+    let html = '<option value="">Select a classical manuscript...</option>';
+    sources.forEach((src, idx) => {
+      html += `<option value="${escapeHtml(src.path)}" data-author="${escapeHtml(src.author)}" data-title="${escapeHtml(src.title)}">${escapeHtml(src.author)}: ${escapeHtml(src.title)} (${Math.round(src.size_bytes / 1024)} KB)</option>`;
+    });
+    selectEl.innerHTML = html;
+    window._localSources = sources;
+  } catch (e) {
+    selectEl.innerHTML = '<option value="">Failed to load local texts from server</option>';
+  }
+}
+
+function updateStudioSelectionSummary() {
+  const summaryBox = document.getElementById('studio-selection-summary');
+  const summaryAr = document.getElementById('summary-ar-title');
+  const summaryEn = document.getElementById('summary-en-title');
+  const summaryAuthor = document.getElementById('summary-author');
+
+  if (!studioSelectedSource) {
+    if (summaryBox) summaryBox.style.display = 'none';
+    return;
+  }
+
+  if (summaryBox) summaryBox.style.display = 'block';
+  if (summaryAr) summaryAr.textContent = studioSelectedSource.title_ar || '';
+  if (summaryEn) summaryEn.textContent = studioSelectedSource.title_en || '';
+  if (summaryAuthor) summaryAuthor.textContent = `${studioSelectedSource.author} [${studioSelectedSource.type.toUpperCase()}]`;
+}
+
+function initTranslationStudio() {
+  // Modal buttons
+  document.getElementById('btn-close-translation-studio')?.addEventListener('click', closeTranslationStudio);
+  document.getElementById('btn-studio-cancel')?.addEventListener('click', closeTranslationStudio);
+
+  // Source Tabs
+  const tabBtns = document.querySelectorAll('.studio-tab-btn');
+  const tabContents = {
+    openiti: document.getElementById('tab-content-openiti'),
+    local: document.getElementById('tab-content-local'),
+    upload: document.getElementById('tab-content-upload')
+  };
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-tab');
+
+      Object.keys(tabContents).forEach(k => {
+        if (tabContents[k]) tabContents[k].style.display = (k === target) ? 'block' : 'none';
+      });
+
+      if (target === 'local' && (!window._localSources || window._localSources.length === 0)) {
+        loadLocalStudioSources();
+      }
+    });
+  });
+
+  // OpenITI Search Input Debounce
+  let searchDebounce = null;
+  document.getElementById('openiti-search-input')?.addEventListener('input', (e) => {
+    clearTimeout(searchDebounce);
+    const query = e.target.value.trim();
+    searchDebounce = setTimeout(() => loadOpenItiResults(query), 350);
+  });
+
+  // Local Select Change
+  document.getElementById('local-source-select')?.addEventListener('change', (e) => {
+    const opt = e.target.selectedOptions[0];
+    const val = e.target.value;
+    const previewEl = document.getElementById('local-source-preview');
+
+    if (!val || !opt) {
+      studioSelectedSource = null;
+      if (previewEl) previewEl.innerHTML = '';
+      updateStudioSelectionSummary();
+      return;
+    }
+
+    const title = opt.getAttribute('data-title') || 'Classical Treatise';
+    const author = opt.getAttribute('data-author') || 'Imam Fakhr al-Din al-Razi';
+
+    studioSelectedSource = {
+      type: 'local',
+      identifier: val,
+      author: author,
+      title_ar: title,
+      title_en: title
+    };
+
+    updateStudioSelectionSummary();
+    if (previewEl) {
+      previewEl.innerHTML = `<div style="color: var(--text-primary); font-weight: 600;">Selected Local Source:</div><div style="font-size: 0.8rem; color: var(--brand-gold); margin-top: 4px;">${escapeHtml(val)}</div>`;
+    }
+  });
+
+  // Upload Dropzone & File Input
+  const dropzone = document.getElementById('upload-dropzone');
+  const fileInput = document.getElementById('upload-file-input');
+  const uploadPreview = document.getElementById('upload-file-preview');
+
+  dropzone?.addEventListener('click', () => fileInput?.click());
+
+  fileInput?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (uploadPreview) {
+      uploadPreview.style.display = 'block';
+      uploadPreview.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">Uploading and parsing manuscript...</div>';
+    }
+
+    const reader = new FileReader();
+    const isText = file.name.endsWith('.txt') || file.name.endsWith('.md');
+
+    reader.onload = async () => {
+      try {
+        const payload = {
+          filename: file.name,
+          content_text: isText ? reader.result : null,
+          content_base64: isText ? null : (reader.result.split(',')[1] || '')
+        };
+
+        const res = await fetchWithTimeout(getApiUrl('/api/translation/upload'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }, 8000);
+
+        if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+        const d = await res.json();
+
+        studioSelectedSource = {
+          type: 'upload',
+          identifier: d.file_id || file.name,
+          author: 'Classical Scholar',
+          title_ar: file.name.replace(/\.[^/.]+$/, ''),
+          title_en: file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ')
+        };
+
+        updateStudioSelectionSummary();
+
+        if (uploadPreview) {
+          uploadPreview.innerHTML = `
+            <div style="color: var(--brand-emerald); font-weight: 600; font-size: 0.85rem;">Uploaded: ${escapeHtml(file.name)} (${d.char_count || file.size} characters)</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; font-style: italic;">"${escapeHtml((d.preview || '').substring(0, 180))}..."</div>
+          `;
+        }
+      } catch (err) {
+        if (uploadPreview) {
+          uploadPreview.innerHTML = `<div style="color: #ef4444; font-size: 0.85rem;">Upload failed: ${escapeHtml(err.message)}</div>`;
+        }
+      }
+    };
+
+    if (isText) reader.readAsText(file);
+    else reader.readAsDataURL(file);
+  });
+
+  // Start Translation Button
+  const startBtn = document.getElementById('btn-studio-start');
+  const openReaderBtn = document.getElementById('btn-studio-open-reader');
+  const monitorPanel = document.getElementById('studio-monitor-panel');
+  const monitorBadge = document.getElementById('monitor-status-badge');
+  const monitorProgress = document.getElementById('monitor-progress-text');
+  const monitorFill = document.getElementById('studio-progress-fill');
+  const monitorRoots = document.getElementById('monitor-roots-tags');
+  const monitorPreview = document.getElementById('monitor-live-preview');
+
+  let completedBookId = null;
+
+  startBtn?.addEventListener('click', async () => {
+    if (!studioSelectedSource || !studioSelectedSource.identifier) {
+      showToast('Please select a classical work from OpenITI, Local, or Upload first');
+      return;
+    }
+
+    const targetLang = document.getElementById('studio-target-lang')?.value || 'en';
+    const editionMode = document.getElementById('studio-edition-mode')?.value || 'bilingual';
+    const chunkLimit = parseInt(document.getElementById('studio-chunk-limit')?.value || '3', 10);
+    const includeGlossary = document.getElementById('studio-include-glossary')?.checked ?? true;
+
+    startBtn.disabled = true;
+    startBtn.textContent = 'Launching AynEngine AI...';
+    if (monitorPanel) monitorPanel.style.display = 'block';
+    if (monitorBadge) monitorBadge.textContent = 'Queued';
+    if (monitorProgress) monitorProgress.textContent = '0%';
+    if (monitorFill) monitorFill.style.width = '0%';
+    if (monitorRoots) monitorRoots.innerHTML = '<span class="root-tag">Lisan al-Arab</span><span class="root-tag">Kitab al-Ayn</span><span class="root-tag">Mufradat</span>';
+    if (monitorPreview) monitorPreview.innerHTML = '<em>Connecting to AynEngine AI translation daemon...</em>';
+
+    try {
+      const payload = {
+        source_type: studioSelectedSource.type,
+        source_identifier: studioSelectedSource.identifier,
+        author: studioSelectedSource.author,
+        book_title_ar: studioSelectedSource.title_ar,
+        book_title_en: studioSelectedSource.title_en,
+        target_lang: targetLang,
+        edition_mode: editionMode,
+        include_rag_glossary: includeGlossary,
+        max_chunks: chunkLimit > 0 ? chunkLimit : null
+      };
+
+      const res = await fetchWithTimeout(getApiUrl('/api/translation/start'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 5000);
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || `HTTP ${res.status}`);
+      }
+
+      const d = await res.json();
+      studioActiveJobId = d.job_id;
+      showToast('Translation job active in background');
+
+      // Start Polling
+      if (studioPollTimer) clearInterval(studioPollTimer);
+      studioPollTimer = setInterval(async () => {
+        if (!studioActiveJobId) return;
+        try {
+          const stRes = await fetchWithTimeout(getApiUrl(`/api/translation/status/${studioActiveJobId}`), {}, 2500);
+          if (!stRes.ok) return;
+          const job = await stRes.json();
+
+          if (monitorBadge) monitorBadge.textContent = job.status_message || job.status || 'Translating';
+          if (monitorProgress) monitorProgress.textContent = `${job.current_chunk || 0}/${job.total_chunks || 0} (${job.progress_pct || 0}%)`;
+          if (monitorFill) monitorFill.style.width = `${job.progress_pct || 0}%`;
+
+          // RAG Roots
+          if (job.active_rag_roots && monitorRoots) {
+            monitorRoots.innerHTML = job.active_rag_roots.map(r => `<span class="root-tag">${escapeHtml(r)}</span>`).join('');
+          }
+
+          // Live translated snippet
+          if (job.last_translated_snippet && monitorPreview) {
+            monitorPreview.innerHTML = `<div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.5;">${escapeHtml(job.last_translated_snippet)}</div>`;
+          }
+
+          if (job.status === 'completed') {
+            clearInterval(studioPollTimer);
+            studioPollTimer = null;
+            completedBookId = job.book_id;
+            if (monitorBadge) monitorBadge.textContent = 'Codex Complete';
+            if (monitorFill) monitorFill.style.width = '100%';
+            if (monitorProgress) monitorProgress.textContent = '100%';
+
+            startBtn.style.display = 'none';
+            if (openReaderBtn) {
+              openReaderBtn.style.display = 'flex';
+            }
+            showToast('AynEngine translation complete! Codex indexed.');
+          } else if (job.status === 'failed') {
+            clearInterval(studioPollTimer);
+            studioPollTimer = null;
+            if (monitorBadge) monitorBadge.textContent = 'Failed';
+            startBtn.disabled = false;
+            startBtn.textContent = 'Retry Translation';
+            showToast(`Translation error: ${job.error || 'Check server logs'}`);
+          }
+        } catch (_) {}
+      }, 1200);
+
+    } catch (err) {
+      startBtn.disabled = false;
+      startBtn.textContent = 'Start AynEngine Translation';
+      showToast(`Error: ${err.message}`);
+    }
+  });
+
+  // Open in Reader Button
+  openReaderBtn?.addEventListener('click', async () => {
+    closeTranslationStudio();
+    await loadLibrary();
+    if (completedBookId && window.selectBook) {
+      await window.selectBook(completedBookId);
+      showToast('Opened newly translated codex in reader');
+    }
+  });
 }

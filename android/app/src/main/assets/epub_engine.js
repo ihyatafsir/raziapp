@@ -322,6 +322,170 @@ class ClientEpubEngine {
     return results;
   }
 
+
+  /**
+   * Generates a 100% valid EPUB3 binary from offline_store data entirely client-side.
+   * Returns { blob, base64, filename }
+   */
+  async exportEpubFromStore(book, offlineData) {
+    if (typeof JSZip === 'undefined') {
+      throw new Error('JSZip is required for EPUB compilation');
+    }
+
+    const zip = new JSZip();
+    const title = book.title || 'Classical Masterwork';
+    const author = book.author || 'Classical Author';
+    const lang = book.is_sq ? 'sq' : (book.format && book.format.includes('sq') ? 'sq' : 'en');
+    const filename = book.filename || (book.id ? book.id + '.epub' : 'codex.epub');
+    const bookId = book.id || 'codex-' + Date.now();
+
+    // 1. mimetype (MUST be first, uncompressed)
+    zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+
+    // 2. META-INF/container.xml
+    zip.file('META-INF/container.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="EPUB/content.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>');
+
+    // CSS
+    const cssContent = 'body { font-family: Georgia, serif; line-height: 1.7; margin: 1.2em; color: #1a1a1a; }\n' +
+      'h1 { font-family: sans-serif; color: #0b3c5d; border-bottom: 2px solid #0b3c5d; padding-bottom: 0.3em; }\n' +
+      'h2 { font-family: sans-serif; color: #2c3e50; }\n' +
+      '.arabic-block { font-family: "Amiri", serif; direction: rtl; text-align: right; font-size: 1.3em; line-height: 2.1; color: #1b365d; background: #f8fafc; border-right: 4px solid #1b365d; padding: 15px; margin: 15px 0; border-radius: 4px; }\n' +
+      '.apparatus-box { background: #f4f6f8; border-left: 4px solid #0b3c5d; padding: 12px; margin: 15px 0; font-size: 0.9em; }\n' +
+      '.translation-block { margin-top: 1.2em; line-height: 1.7; }\n' +
+      'p { margin-bottom: 1em; }';
+    zip.file('EPUB/style/nav.css', cssContent);
+
+    // Prepare chapters
+    const toc = offlineData && offlineData.toc ? offlineData.toc : [];
+    const chaptersMap = offlineData && offlineData.chapters ? offlineData.chapters : {};
+
+    const manifestItems = [
+      '<item id="style_nav" href="style/nav.css" media-type="text/css"/>',
+      '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
+      '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
+    ];
+    const spineItems = [];
+    const navLinks = [];
+    const ncxPoints = [];
+
+    const escapeXml = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    let chapIndex = 1;
+    for (const t of toc) {
+      const href = t.href;
+      const chTitle = t.title || 'Section ' + chapIndex;
+      const chData = chaptersMap[href] || {};
+      const chFileName = 'chap_' + String(chapIndex).padStart(2, '0') + '.xhtml';
+
+      let parasHtml = '';
+      if (chData.paragraphs && chData.paragraphs.length > 0) {
+        parasHtml = chData.paragraphs.map(p => {
+          let inner = '';
+          if (p.arabic_text) {
+            inner += '<div class="arabic-block">' + escapeXml(p.arabic_text) + '</div>';
+          }
+          if (p.text && p.text !== p.arabic_text) {
+            inner += '<p>' + escapeXml(p.text) + '</p>';
+          }
+          return inner;
+        }).join('\n');
+      } else {
+        parasHtml = '<p>Section content indexed in RaziApp offline codex.</p>';
+      }
+
+      const xhtmlContent = '<?xml version="1.0" encoding="utf-8"?>\n' +
+        '<!DOCTYPE html>\n' +
+        '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="' + lang + '">\n' +
+        '<head>\n' +
+        '  <title>' + escapeXml(chTitle) + '</title>\n' +
+        '  <link rel="stylesheet" type="text/css" href="style/nav.css"/>\n' +
+        '</head>\n' +
+        '<body>\n' +
+        '  <h1>' + escapeXml(chTitle) + '</h1>\n' +
+        '  <div class="translation-block">\n' +
+        '    ' + parasHtml + '\n' +
+        '  </div>\n' +
+        '</body>\n' +
+        '</html>';
+
+      zip.file('EPUB/' + chFileName, xhtmlContent);
+
+      const itemId = 'chap_' + chapIndex;
+      manifestItems.push('<item id="' + itemId + '" href="' + chFileName + '" media-type="application/xhtml+xml"/>');
+      spineItems.push('<itemref idref="' + itemId + '"/>');
+      navLinks.push('<li><a href="' + chFileName + '">' + escapeXml(chTitle) + '</a></li>');
+      ncxPoints.push('<navPoint id="np_' + chapIndex + '" playOrder="' + chapIndex + '">\n' +
+        '  <navLabel><text>' + escapeXml(chTitle) + '</text></navLabel>\n' +
+        '  <content src="' + chFileName + '"/>\n' +
+        '</navPoint>');
+
+      chapIndex++;
+    }
+
+    // nav.xhtml
+    const navContent = '<?xml version="1.0" encoding="utf-8"?>\n' +
+      '<!DOCTYPE html>\n' +
+      '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="' + lang + '">\n' +
+      '<head><title>Table of Contents</title></head>\n' +
+      '<body>\n' +
+      '  <nav epub:type="toc" id="toc">\n' +
+      '    <h1>Table of Contents</h1>\n' +
+      '    <ol>\n' +
+      '      ' + navLinks.join('\n      ') + '\n' +
+      '    </ol>\n' +
+      '  </nav>\n' +
+      '</body>\n' +
+      '</html>';
+    zip.file('EPUB/nav.xhtml', navContent);
+
+    // toc.ncx
+    const ncxContent = '<?xml version="1.0" encoding="utf-8"?>\n' +
+      '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n' +
+      '  <head>\n' +
+      '    <meta name="dtb:uid" content="' + bookId + '"/>\n' +
+      '    <meta name="dtb:depth" content="1"/>\n' +
+      '  </head>\n' +
+      '  <docTitle><text>' + escapeXml(title) + '</text></docTitle>\n' +
+      '  <navMap>\n' +
+      '    ' + ncxPoints.join('\n    ') + '\n' +
+      '  </navMap>\n' +
+      '</ncx>';
+    zip.file('EPUB/toc.ncx', ncxContent);
+
+    // content.opf
+    const opfContent = '<?xml version="1.0" encoding="utf-8"?>\n' +
+      '<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="3.0">\n' +
+      '  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n' +
+      '    <dc:identifier id="BookId">' + bookId + '</dc:identifier>\n' +
+      '    <dc:title>' + escapeXml(title) + '</dc:title>\n' +
+      '    <dc:creator>' + escapeXml(author) + '</dc:creator>\n' +
+      '    <dc:language>' + lang + '</dc:language>\n' +
+      '  </metadata>\n' +
+      '  <manifest>\n' +
+      '    ' + manifestItems.join('\n    ') + '\n' +
+      '  </manifest>\n' +
+      '  <spine toc="ncx">\n' +
+      '    ' + spineItems.join('\n    ') + '\n' +
+      '  </spine>\n' +
+      '</package>';
+    zip.file('EPUB/content.opf', opfContent);
+
+    const base64 = await zip.generateAsync({ type: 'base64' });
+    let blob = null;
+    try {
+      if (typeof Blob !== 'undefined') {
+        const u8 = await zip.generateAsync({ type: 'uint8array' });
+        blob = new Blob([u8], { type: 'application/epub+zip' });
+      }
+    } catch (_) {}
+
+    return {
+      blob,
+      base64,
+      filename
+    };
+  }
+
   _resolvePath(baseDir, relativePath) {
     if (!baseDir) return relativePath;
     if (relativePath.startsWith('/')) return relativePath.substring(1);

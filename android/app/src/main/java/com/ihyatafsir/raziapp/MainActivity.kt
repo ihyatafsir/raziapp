@@ -198,6 +198,37 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        @JavascriptInterface
+        fun shareEpubFile(title: String, filename: String, base64Content: String) {
+            runOnUiThread {
+                try {
+                    val rawB64 = if (base64Content.contains(",")) base64Content.substringAfter(",") else base64Content
+                    val bytes = android.util.Base64.decode(rawB64, android.util.Base64.DEFAULT)
+                    val shareDir = java.io.File(cacheDir, "shared_epubs").apply { mkdirs() }
+                    val cleanFilename = if (filename.endsWith(".epub")) filename else "${filename}.epub" 
+                    val file = java.io.File(shareDir, cleanFilename).apply { writeBytes(bytes) }
+
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this@MainActivity,
+                        "${applicationContext.packageName}.fileprovider",
+                        file
+                    )
+
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "application/epub+zip"
+                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, title)
+                        putExtra(android.content.Intent.EXTRA_TEXT, "${title} - Classical Islamic Masterwork (RaziApp)")
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(android.content.Intent.createChooser(intent, "Share Classical EPUB"))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Share failed: ${e.message}", e)
+                    Toast.makeText(this@MainActivity, "Share failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
