@@ -2288,7 +2288,7 @@ button {
   max-height: 100dvh !important;
   background: var(--bg-canvas) !important;
   z-index: 10000 !important;
-  display: flex !important;
+  display: none !important;
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: flex-start !important;
@@ -2299,13 +2299,16 @@ button {
   margin: 0 !important;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none !important;
   transition: opacity 0.25s ease, transform 0.25s ease;
   transform: translateY(20px);
 }
 
 #modal-translation-studio.studio-fullscreen-workspace.active {
+  display: flex !important;
   opacity: 1 !important;
   visibility: visible !important;
+  pointer-events: auto !important;
   transform: translateY(0) !important;
 }
 

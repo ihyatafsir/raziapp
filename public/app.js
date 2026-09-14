@@ -1143,7 +1143,35 @@ async function loadLibrary() {
       }
     }
 
-    if (!booksData) throw new Error('Failed to load library catalog');
+    // High-resilience fallback: extract catalog directly from offline_store if catalog.json is missing
+    if (!booksData || !Array.isArray(booksData) || booksData.length === 0) {
+      try {
+        const store = await getOfflineStore();
+        if (store && Object.keys(store).length > 0) {
+          booksData = Object.keys(store).map(id => ({
+            id: id,
+            title: store[id].title || id,
+            arabic_title: store[id].arabic_title || 'كتاب كلاسيكي',
+            author: store[id].author || 'Imam Fakhr al-Din al-Razi',
+            author_key: 'razi',
+            topic_key: 'theology_kalam',
+            topic_name: 'Kalam & Dialectics',
+            pillar_key: 'theology_kalam',
+            pillar_name: 'Classical Masterwork',
+            version: 'v5',
+            format: 'bilingual',
+            is_v4_v5: true,
+            is_bilingual: true,
+            filename: `${id}.epub`,
+            chapters_count: store[id].toc ? store[id].toc.length : 1
+          }));
+        }
+      } catch (storeFallbackErr) {
+        console.warn('Store fallback error:', storeFallbackErr);
+      }
+    }
+
+    if (!booksData || booksData.length === 0) throw new Error('Failed to load library catalog');
     
     // Merge custom books created via AynEngine Studio
     try {
@@ -2853,8 +2881,7 @@ function initTranslationStudio() {
   pasteArea?.addEventListener('input', (e) => {
     const text = e.target.value.trim();
     if (text.length > 5) {
-      const firstLine = text.split('
-')[0].substring(0, 35);
+      const firstLine = text.split('\n')[0].substring(0, 35);
       studioSelectedSource = {
         type: 'direct',
         identifier: 'direct_' + Date.now(),
@@ -2972,9 +2999,7 @@ function initTranslationStudio() {
       }
 
       // 3. Segment text into sections
-      const rawParagraphs = arabicText.split(/
-
-+/).map(p => p.trim()).filter(Boolean);
+      const rawParagraphs = arabicText.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
       const maxSections = chunkLimit > 0 ? Math.min(chunkLimit, rawParagraphs.length) : rawParagraphs.length;
       const sectionsToTranslate = rawParagraphs.slice(0, Math.max(1, maxSections));
 
@@ -3046,8 +3071,7 @@ Zero Emoji Policy. Preserve exact Arabic {«...»} for Quranic citations and Had
 
         // 3. Autonomous Scholarly Synthesis Engine (100% Standalone Offline Fallback)
         if (!translatedText) {
-          const rootHighlights = extractedRoots.slice(0, 3).map(r => `[Root ${r.root} (${r.source}): "${r.meaning.substring(0, 100)}..."]`).join('
-');
+          const rootHighlights = extractedRoots.slice(0, 3).map(r => `[Root ${r.root} (${r.source}): "${r.meaning.substring(0, 100)}..."]`).join('\n');
           translatedText = `[AynEngine Autonomous Scholarly Translation]
 "${arPassage}"
 
