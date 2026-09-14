@@ -13,7 +13,7 @@
   
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
-  <link rel="stylesheet" href="style.css?v=2.3.4">
+  <link rel="stylesheet" href="style.css?v=2.3.5">
 </head>
 <body>
 
@@ -251,34 +251,6 @@
 
     </div>
 
-    <!-- Floating Classical Arabic Vocalization Bar -->
-    <div class="arabic-audio-dock" id="arabic-audio-dock">
-      <div class="audio-dock-inner">
-        <div class="audio-reciter-info">
-          <div class="audio-wave-bars" id="audio-wave-animation">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-          </div>
-          <div class="reciter-meta">
-            <span class="reciter-name">قَارِئ الفَصَاحَة النَّبَوِيَّة</span>
-            <span class="reciter-status" id="audio-reciter-status">Classical Arabic Recitation</span>
-          </div>
-        </div>
-        <div class="audio-actions">
-          <button class="audio-play-pause-btn" id="btn-audio-play-pause" title="Play/Pause Arabic Recitation">
-            <svg class="svg-icon play-icon" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-            <svg class="svg-icon pause-icon hidden" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-          </button>
-          <button class="audio-close-btn" id="btn-audio-stop" title="Stop Audio">
-            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-      </div>
-      <audio id="core-audio-player" preload="none" style="display:none;"></audio>
-    </div>
-
     <!-- Sticky Mobile Bottom Tab Navigation -->
     <nav class="mobile-bottom-bar" id="mobile-bottom-bar">
       <button class="bottom-tab-item" id="mb-btn-toc">
@@ -433,18 +405,6 @@
         </div>
 
         <!-- Book Grid Container (Hierarchical Grouping) -->
-                <!-- AynEngine Studio Hero Banner in Library -->
-        <div class="library-studio-banner" id="banner-open-studio" style="margin: 0.75rem 1rem; padding: 0.85rem 1rem; border-radius: 12px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(16, 185, 129, 0.1)); border: 1px solid rgba(212, 175, 55, 0.35); display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-gold); font-weight: 700;">AynEngine AI Translation Studio v5.1</span>
-            <span style="font-size: 0.92rem; font-weight: 700; color: var(--text-primary);">Translate Classical Islamic Works</span>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">Search 7,123 works on OpenITI GitHub • Quad-Lexical RAG • PDF Upload</span>
-          </div>
-          <button class="card-action-btn" id="btn-banner-launch-studio" style="padding: 0.5rem 0.95rem; background: var(--brand-gold); color: #000; font-weight: 700; border-radius: 8px; font-size: 0.78rem; white-space: nowrap;">
-            Launch Studio
-          </button>
-        </div>
-
         <div class="modal-grid-scroll" id="library-grid">
           <!-- Injected dynamically via app.js -->
         </div>
@@ -686,11 +646,14 @@
             </div>
 
             <div class="studio-field" id="studio-api-key-container" style="margin-top: 0.35rem;">
-              <label class="studio-label" style="display: flex; justify-content: space-between;">
-                <span>DeepSeek API Key (Optional Custom Key):</span>
-                <span id="api-key-status-badge" style="color: var(--brand-emerald); font-weight: 600; text-transform: none;">Preconfigured Active</span>
+              <label class="studio-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>DeepSeek API Key:</span>
+                <span id="api-key-status-badge" style="color: var(--brand-gold); font-weight: 600; text-transform: none; font-size: 0.72rem;">No Key (Required for DeepSeek v4.1)</span>
               </label>
-              <input type="password" class="search-input" id="studio-api-key-input" placeholder="sk-..." style="font-family: monospace; font-size: 0.8rem; padding: 0.45rem 0.75rem;">
+              <input type="password" class="search-input" id="studio-api-key-input" placeholder="Paste your DeepSeek API Key (sk-...)" style="font-family: monospace; font-size: 0.8rem; padding: 0.45rem 0.75rem;">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                Please paste your personal DeepSeek API key (sk-...) to translate with DeepSeek Flash v4.1. Stored securely on your device.
+              </div>
             </div>
 
             <!-- RAG Lexical Glossary Checkbox -->
@@ -753,8 +716,8 @@
   </div>
 
   <script src="jszip.min.js"></script>
-  <script src="epub_engine.js?v=2.3.4"></script>
-  <script src="app.js?v=2.3.4"></script>
+  <script src="epub_engine.js?v=2.3.5"></script>
+  <script src="app.js?v=2.3.5"></script>
 </body>
 </html>
 

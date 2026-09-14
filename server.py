@@ -343,8 +343,8 @@ def get_available_voices():
 def download_android_apk():
     """Serves the compiled RaziApp Android APK package."""
     candidates = [
-        BASE_DIR / "raziapp-v2.3.4.apk",
-        BASE_DIR / "public" / "raziapp-v2.3.4.apk",
+        BASE_DIR / "raziapp-v2.3.5.apk",
+        BASE_DIR / "public" / "raziapp-v2.3.5.apk",
         BASE_DIR / "public" / "raziapp.apk",
         BASE_DIR / "raziapp.apk",
         BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk",
@@ -357,7 +357,7 @@ def download_android_apk():
         raise HTTPException(status_code=404, detail="APK binary not found.")
     return FileResponse(
         path=str(apk_path),
-        filename="raziapp-v2.3.4.apk",
+        filename="raziapp-v2.3.5.apk",
         media_type="application/vnd.android.package-archive"
     )
 

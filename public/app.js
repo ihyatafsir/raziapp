@@ -150,7 +150,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFullscreenEngine();
   initEventListeners();
   initEpubPageTurnEngine();
-  initAudioEngine();
   initScrollProgressTracker();
   initKeyboardNavigation();
   initReaderSwipeNavigation();
@@ -649,10 +648,6 @@ function initEventListeners() {
     }
   });
 
-  // Arabic Audio Dock Controls
-  document.getElementById('btn-audio-play-pause')?.addEventListener('click', toggleArabicAudio);
-  document.getElementById('btn-audio-stop')?.addEventListener('click', stopArabicAudio);
-
   // TOC Search Filter
   document.getElementById('toc-search')?.addEventListener('input', (e) => {
     filterTocList(e.target.value.toLowerCase().trim());
@@ -902,10 +897,6 @@ function buildEpubPages(targetPageIndex = 0) {
             return `
               <div class="page-arabic">
                 <div>${escapeHtml(item.arabic || item.text)}</div>
-                <button class="page-arabic-btn" onclick="event.stopPropagation(); reciteArabicParagraph(${item.originalIndex});">
-                  <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  <span>تلاوة</span>
-                </button>
               </div>
             `;
           }
@@ -1440,6 +1431,7 @@ window.selectBook = async function(bookId) {
 
 // --- Table of Contents (Taqsim) Engine ---
 async function loadBookToc(bookId) {
+  state.activeBookId = bookId;
   const tocList = document.getElementById('toc-list');
   if (tocList) {
     tocList.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: var(--text-muted);">Deconstructing Codex Structure...</div>';
@@ -1447,13 +1439,24 @@ async function loadBookToc(bookId) {
 
   try {
     let tocData = null;
-    try {
-      const res = await fetchWithTimeout(getApiUrl(`/api/book/${bookId}/toc`), {}, 1500);
-      if (res.ok) {
-        const data = await res.json();
-        tocData = data.toc;
+
+    // Fast-path for client-generated treatises (instant local loading)
+    if (bookId && bookId.startsWith('ayn_')) {
+      const store = await getOfflineStore();
+      if (store && store[bookId] && store[bookId].toc) {
+        tocData = store[bookId].toc;
       }
-    } catch (_) {}
+    }
+
+    if (!tocData) {
+      try {
+        const res = await fetchWithTimeout(getApiUrl(`/api/book/${bookId}/toc`), {}, 1500);
+        if (res.ok) {
+          const data = await res.json();
+          tocData = data.toc;
+        }
+      } catch (_) {}
+    }
 
     if (!tocData || tocData.length === 0) {
       const store = await getOfflineStore();
@@ -1542,6 +1545,14 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
 
   try {
     let data = null;
+
+    // 0. Fast-path for client-generated treatises
+    if (state.activeBookId && state.activeBookId.startsWith('ayn_')) {
+      const store = await getOfflineStore();
+      if (store && store[state.activeBookId]?.chapters?.[href]) {
+        data = store[state.activeBookId].chapters[href];
+      }
+    }
 
     // 1. Try Pure Client-Side EPUB Engine (Primary Standalone Path)
     if (window.clientEpubEngine && window.clientEpubEngine.currentZip) {
@@ -1656,12 +1667,7 @@ function renderChapterContent(paragraphs) {
         </div>
         ${isArabic ? `<div class="arabic-text">${escapeHtml(p.arabic || p.text)}</div>` : `<div class="text-content">${textHtml}</div>`}
         <div class="card-actions-bar">
-          ${isArabic ? `
-            <button class="card-action-btn arabic-recite-btn" title="Recite Classical Arabic" onclick="event.stopPropagation(); reciteArabicParagraph(${idx});">
-              <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              <span>تلاوة</span>
-            </button>
-          ` : ''}
+
           <button class="card-action-btn" title="Examine dialectic with AI" onclick="event.stopPropagation(); examineParagraphWithAi(${idx});">
             <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <span>Examine</span>
@@ -1819,151 +1825,12 @@ window.jumpToSearchResult = async function(chapterHref, paragraphId) {
   }
 };
 
-// --- Classical Arabic Recitation Engine ---
-function initAudioEngine() {
-  const audio = document.getElementById('core-audio-player');
-  if (!audio) return;
-
-  audio.addEventListener('ended', () => {
-    state.isPlayingArabic = false;
-    stopArabicAudio();
-  });
-
-  audio.addEventListener('error', () => {
-    state.isPlayingArabic = false;
-    stopArabicAudio();
-  });
-}
-
-window.reciteArabicParagraph = async function(idx) {
-  setActiveParagraph(idx);
-  const paras = state.chapterData?.paragraphs;
-  if (!paras || !paras[idx]) return;
-
-  const arabicText = paras[idx].arabic_text || paras[idx].arabic || paras[idx].text;
-  if (!arabicText || arabicText.trim().length === 0) return;
-
-  const audio = document.getElementById('core-audio-player');
-  const dock = document.getElementById('arabic-audio-dock');
-  const wave = document.getElementById('audio-wave-animation');
-  const statusEl = document.getElementById('audio-reciter-status');
-  if (dock) dock.classList.add('active');
-
-  // 1. Try Web Speech API for instant client-side offline recitation
-  if ('speechSynthesis' in window) {
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(arabicText);
-      utterance.lang = 'ar-SA';
-      utterance.rate = 0.88;
-
-      const voices = window.speechSynthesis.getVoices();
-      const arVoice = voices.find(v => v.lang && v.lang.startsWith('ar'));
-      if (arVoice) utterance.voice = arVoice;
-
-      utterance.onstart = () => {
-        state.isPlayingArabic = true;
-        if (wave) wave.classList.add('active');
-        if (statusEl) statusEl.textContent = 'Reciting Classical Arabic Text (Offline Engine)';
-        updateArabicPlayIcon(true);
-      };
-
-      utterance.onend = () => {
-        stopArabicAudio();
-      };
-
-      utterance.onerror = () => {
-        stopArabicAudio();
-      };
-
-      window.speechSynthesis.speak(utterance);
-      return;
-    } catch (_) {}
-  }
-
-  // 2. Fallback to server synthesis
-  if (statusEl) statusEl.textContent = 'Synthesizing Arabic Vocalization...';
-
-  try {
-    const res = await fetchWithTimeout(getApiUrl('/api/tts/synthesize'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: arabicText,
-        voice: 'classical_arabic'
-      })
-    }, 2500);
-
-    if (!res.ok) throw new Error('Arabic synthesis failed');
-    const data = await res.json();
-
-    if (audio) {
-      audio.src = data.audio_url;
-      audio.play().then(() => {
-        state.isPlayingArabic = true;
-        if (wave) wave.classList.add('active');
-        if (statusEl) statusEl.textContent = 'Reciting Classical Arabic Text';
-        updateArabicPlayIcon(true);
-      }).catch(e => {
-        console.error('Audio play failure:', e);
-        stopArabicAudio();
-      });
-    }
-  } catch (err) {
-    console.error('TTS error:', err);
-    stopArabicAudio();
-    showToast('Arabic recitation unavailable');
-  }
-};
-
-function toggleArabicAudio() {
-  const audio = document.getElementById('core-audio-player');
-  const wave = document.getElementById('audio-wave-animation');
-  if (!audio) return;
-
-  if (state.isPlayingArabic) {
-    if ('speechSynthesis' in window) window.speechSynthesis.pause();
-    audio.pause();
-    state.isPlayingArabic = false;
-    if (wave) wave.classList.remove('active');
-    updateArabicPlayIcon(false);
-  } else if (audio.src) {
-    audio.play().then(() => {
-      state.isPlayingArabic = true;
-      if (wave) wave.classList.add('active');
-      updateArabicPlayIcon(true);
-    });
-  }
-}
-
-function stopArabicAudio() {
-  if ('speechSynthesis' in window) {
-    try { window.speechSynthesis.cancel(); } catch (_) {}
-  }
-  const audio = document.getElementById('core-audio-player');
-  const dock = document.getElementById('arabic-audio-dock');
-  const wave = document.getElementById('audio-wave-animation');
-  if (audio) {
-    audio.pause();
-    audio.removeAttribute('src');
-  }
-  state.isPlayingArabic = false;
-  if (wave) wave.classList.remove('active');
-  if (dock) dock.classList.remove('active');
-  updateArabicPlayIcon(false);
-}
-
-
-function updateArabicPlayIcon(isPlaying) {
-  const btn = document.getElementById('btn-audio-play-pause');
-  if (!btn) return;
-  const playIcon = btn.querySelector('.play-icon');
-  const pauseIcon = btn.querySelector('.pause-icon');
-  if (playIcon && pauseIcon) {
-    playIcon.classList.toggle('hidden', isPlaying);
-    pauseIcon.classList.toggle('hidden', !isPlaying);
-  }
-}
+// --- Classical Arabic Recitation Engine (Disabled) ---
+function initAudioEngine() {}
+window.reciteArabicParagraph = function(idx) {};
+function toggleArabicAudio() {}
+function stopArabicAudio() {}
+function updateArabicPlayIcon(isPlaying) {}
 
 // --- Al-Muhaqqiq Dialectical AI Assistant ---
 window.examineParagraphWithAi = function(idx) {
@@ -2304,13 +2171,25 @@ let embeddedCorpusCache = null;
 let embeddedTextsCache = null;
 let ragLookupCache = null;
 
-// Default preconfigured DeepSeek Key for AynEngine
+// Zero preconfigured key - users paste their own personal DeepSeek API key (sk-...)
 const DEFAULT_DEEPSEEK_KEY = '';
 
 function getActiveDeepSeekKey() {
   const saved = localStorage.getItem('raziapp_deepseek_key');
   if (saved && saved.trim()) return saved.trim();
-  return DEFAULT_DEEPSEEK_KEY;
+  return '';
+}
+
+function updateStudioApiKeyBadge(key) {
+  const badge = document.getElementById('api-key-status-badge');
+  if (!badge) return;
+  if (key && key.trim()) {
+    badge.textContent = 'Active Key Configured';
+    badge.style.color = 'var(--brand-emerald)';
+  } else {
+    badge.textContent = 'No Key (Required for DeepSeek v4.1)';
+    badge.style.color = 'var(--brand-gold)';
+  }
 }
 
 async function loadEmbeddedCorpus() {
@@ -2357,11 +2236,12 @@ function openTranslationStudio() {
     updateBackdrop();
   }
 
-  // Pre-populate API key field if custom
+  // Pre-populate API key field and update status badge
   const keyInput = document.getElementById('studio-api-key-input');
   if (keyInput) {
     const curKey = localStorage.getItem('raziapp_deepseek_key') || '';
     keyInput.value = curKey;
+    updateStudioApiKeyBadge(curKey);
   }
 
   const openitiList = document.getElementById('openiti-results-list');
@@ -2702,6 +2582,114 @@ function matchSibawayhRule(arabicText, ragBundle) {
   };
 }
 
+// Complete Active-RAG Grounding Builder (Verbatim Quad-Lexical Scholia + Sibawayh + Kalam Ontology)
+function buildActiveRagPromptContext(passageText, ragBundle, targetLang, treatiseMeta) {
+  const extractedRoots = extractArabicRoots(passageText, ragBundle);
+  const sibRule = matchSibawayhRule(passageText, ragBundle);
+
+  const isAlbanian = (targetLang === 'sq');
+  const isGerman = (targetLang === 'de');
+  const isFrench = (targetLang === 'fr');
+  const isTurkish = (targetLang === 'tr');
+  const targetLangName = isAlbanian ? 'Albanian (Shqip)' : isGerman ? 'German (Deutsch)' : isFrench ? 'French (Français)' : isTurkish ? 'Turkish (Türkçe)' : 'English';
+  const authorialVoice = isAlbanian ? 'Unë them... / Dije se...' : 'I say... / Know that...';
+  const author = treatiseMeta?.author || 'Imam Fakhr al-Din al-Razi';
+  const bookTitleAr = treatiseMeta?.title_ar || 'كتاب كلاسيكي';
+  const bookTitleEn = treatiseMeta?.title_en || 'Classical Treatise';
+
+  let ragLexiconContext = '';
+  if (extractedRoots.length > 0) {
+    const lines = ['\n### 📖 VERBATIM CLASSICAL LEXICAL SCHOLIA (ACTIVE PRE-RETRIEVAL):'];
+    extractedRoots.slice(0, 4).forEach(r => {
+      const e = r.entry || {};
+      lines.push(`\n[Root: ${r.root}]`);
+      if (e.raghib) {
+        const clean = String(e.raghib).replace(/"/g, "'").substring(0, 320);
+        lines.push(`  • Al-Raghib (Al-Mufradat): "${clean}"`);
+      }
+      if (e.asas_literal) {
+        const cleanLit = String(e.asas_literal).replace(/"/g, "'").substring(0, 200);
+        lines.push(`  • Al-Zamakhshari (Asas - Haqiqah/Literal): "${cleanLit}"`);
+      }
+      if (e.asas_majaz) {
+        const cleanMaj = String(e.asas_majaz).replace(/"/g, "'").substring(0, 200);
+        lines.push(`  • Al-Zamakhshari (Asas - Majaz/Metaphorical): "${cleanMaj}"`);
+      }
+      if (e.lisan) {
+        const cleanLisan = String(e.lisan).replace(/"/g, "'").substring(0, 260);
+        lines.push(`  • Lisan al-Arab: "${cleanLisan}"`);
+      }
+      if (e.ayn) {
+        const cleanAyn = String(e.ayn).replace(/"/g, "'").substring(0, 220);
+        lines.push(`  • Kitab al-Ayn: "${cleanAyn}"`);
+      }
+    });
+
+    lines.push('\n### 📜 SĪBAWAYH SYNTACTIC CANON (AL-KITĀB):');
+    lines.push(`  • Rule: ${sibRule.name}`);
+    lines.push(`  • Governing Rule Excerpt: "${String(sibRule.canon).substring(0, 220)}"`);
+    ragLexiconContext = lines.join('\n');
+  }
+
+  const titleHeader = isAlbanian ? 'TITLE_SQ:' : 'ENGLISH_TITLE:';
+
+  const systemPrompt = `You are AynEngine AI (v5.1 Sovereign Morphological Edition) — the premier Quad-Lexical Classical Arabic Translation Engine.
+You specialize in verbatim, zero-loss scholarly translation of classical Islamic theological (Kalam), philosophical, and Quranic texts by ${author}.
+Target Language: ${targetLangName}.
+
+🏛️ QUAD-LEXICAL & SYNTACTIC ANCHOR CONSTELLATION:
+Ground your translation directly in the 4 Classical Lexicons & Sibawayh:
+1. LISAN AL-ARAB (Ibn Manzur) & KITAB AL-AYN (Al-Farahidi): Archaic root etymology and core lexicography.
+2. AL-MUFRADAT (Al-Raghib al-Isfahani): Theological, metaphysical, and Quranic technical terminology.
+3. ASAS AL-BALAGHAH (Al-Zamakhshari): Classical Arabic rhetoric distinguishing literal (Haqiqah) from metaphorical (Majaz) usage.
+4. AL-KITAB (Sibawayh): Syntactic parsing rules for periodic sentence structures.
+
+${ragLexiconContext}
+
+⚖️ THEOLOGICAL & PHILOSOPHICAL ONTOLOGY APPARATUS (KALAM PRECISION):
+- IMMATERIAL SPIRITUAL REALITIES (AL-LAṬĀ'IF) vs CORPOREAL SUBSTANCES (AL-JAWĀHIR):
+  * Never translate 'laṭīfah' (لطيفة) as physical/spatial 'substance' (which conflates with Kalam jawhar/ousia).
+  * Translate 'laṭīfah rabbāniyyah' as 'divine subtlety [immaterial spiritual reality]' or 'subtle divine reality'.
+  * Strictly distinguish between 'takhṣīṣ' (semantic specification/restriction) and 'naql' (lexical transfer/conversion).
+  * Render 'musammayāt' as 'referents / designated realities' and 'ḥudūd' as 'definitions / formal boundaries'.
+  * Render 'aʿrāḍ' as 'accidents' and 'jawhar' as 'substance' (strictly in distinction to laṭīfah).
+
+📜 ZERO-LOSS SCHOLARLY STANDARDS:
+- 100% Verbatim translation in the authentic 1st-person authorial voice ('${authorialVoice}').
+- ZERO text cuts, zero skipping, and zero omissions. Every single line of Arabic MUST be translated.
+- ZERO extraneous AI commentary, modern preachiness, or moralizing additions.
+- Retain exact Arabic script in {«...»} braces for Quranic citations and Hadith.
+- Transliterate key technical philosophical and legal terms in parentheses.
+
+Format your output strictly as:
+${titleHeader} [Concise Title in Target Language]
+QUAD_ANCHORS:
+- Root: [Arabic Root] ([Transliteration])
+  * Lisan / Ayn: [Core linguistic root meaning]
+  * Al-Raghib (Mufradat): [Theological/Kalam semantic nuance]
+  * Al-Zamakhshari (Asas): [Literal vs Metaphorical distinction]
+- Sibawayh Rule: [Syntactic Rule Name] ([Short rule explanation])
+
+TRANSLATION:
+[Verbatim 1st-person ${targetLangName} translation guided by the anchors above. MUST END ON A COMPLETE SENTENCE.]`;
+
+  const userPrompt = `Book: ${bookTitleEn} (${bookTitleAr})
+Author: ${author}
+
+Arabic Text (${passageText.length} chars):
+"""
+${passageText}
+"""`;
+
+  return {
+    systemPrompt,
+    userPrompt,
+    extractedRoots,
+    sibRule
+  };
+}
+
+
 // Render Interactive RAG Lexicon Explorer Tab
 async function renderRagLexiconExplorer(query = '') {
   const listEl = document.getElementById('rag-lexicon-results-list');
@@ -2780,10 +2768,12 @@ function initTranslationStudio() {
     const val = e.target.value.trim();
     if (val) {
       localStorage.setItem('raziapp_deepseek_key', val);
-      showToast('Custom DeepSeek API key saved');
+      updateStudioApiKeyBadge(val);
+      showToast('DeepSeek API key saved');
     } else {
       localStorage.removeItem('raziapp_deepseek_key');
-      showToast('Reset DeepSeek key');
+      updateStudioApiKeyBadge('');
+      showToast('DeepSeek API key cleared');
     }
   });
 
@@ -2959,6 +2949,20 @@ function initTranslationStudio() {
     const chunkLimit = parseInt(document.getElementById('studio-chunk-limit')?.value || '3', 10);
     const includeGlossary = document.getElementById('studio-include-glossary')?.checked ?? true;
 
+    // Enforce API key requirement for DeepSeek v4.1 (Zero hardcoded keys)
+    if (aiEngineChoice === 'deepseek') {
+      const activeKey = getActiveDeepSeekKey();
+      if (!activeKey) {
+        showToast('DeepSeek API Key Required: Please paste your API key (sk-...) above or choose Offline Synthesis.');
+        const keyInput = document.getElementById('studio-api-key-input');
+        if (keyInput) {
+          keyInput.focus();
+          keyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+    }
+
     startBtn.disabled = true;
     startBtn.textContent = 'AynEngine AI Active...';
     if (monitorPanel) monitorPanel.style.display = 'block';
@@ -3011,25 +3015,24 @@ function initTranslationStudio() {
       const activeApiKey = getActiveDeepSeekKey();
       const langName = targetLang === 'sq' ? 'Albanian (Shqip)' : targetLang === 'de' ? 'German (Deutsch)' : targetLang === 'tr' ? 'Turkish (Türkçe)' : targetLang === 'fr' ? 'French' : 'English';
 
-      const systemPrompt = `You are AynEngine AI (v5.1 Sovereign Quad-Lexical Edition) — the premier Classical Arabic Translation Engine.
-Translate the classical Islamic theological (Kalam) text with 100% verbatim precision into ${langName}.
-Syntactic Canon: ${sibRule.name} - ${sibRule.canon}.
-Quad-Lexical Grounding: Ground terminology in Lisan al-Arab, Kitab al-Ayn, Al-Mufradat, and Asas al-Balaghah.
-Zero Emoji Policy. Preserve exact Arabic {«...»} for Quranic citations and Hadith.`;
-
       for (let i = 0; i < sectionsToTranslate.length; i++) {
         const arPassage = sectionsToTranslate[i];
         let translatedText = '';
+        let sectionTitle = `Section ${i + 1}: Epistemic Dialectic`;
 
         if (monitorBadge) monitorBadge.textContent = `Translating Section ${i + 1} of ${sectionsToTranslate.length}`;
         if (monitorPreview) monitorPreview.innerHTML = `<em>${escapeHtml(arPassage.substring(0, 140))}...</em>`;
 
+        // Build authentic Active-RAG prompt grounded in Quad-Lexicon and Sibawayh
+        const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
+        const { systemPrompt, userPrompt } = ragContext;
+
         // Attempt Translation via DeepSeek Flash 4.1
-        if (aiEngineChoice === 'deepseek') {
+        if (aiEngineChoice === 'deepseek' && activeApiKey) {
           // 1. Try Native Android Bridge (Zero CORS)
           if (window.AndroidBridge && typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
             try {
-              const resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, arPassage, activeApiKey, 'deepseek-chat');
+              const resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, 'deepseek-chat');
               const resJson = JSON.parse(resJsonStr || '{}');
               if (resJson.success && resJson.content) {
                 translatedText = resJson.content;
@@ -3040,7 +3043,7 @@ Zero Emoji Policy. Preserve exact Arabic {«...»} for Quranic citations and Had
           }
 
           // 2. Try Web fetch if native bridge was not available
-          if (!translatedText && activeApiKey) {
+          if (!translatedText) {
             try {
               const fetchRes = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
                 method: 'POST',
@@ -3052,12 +3055,12 @@ Zero Emoji Policy. Preserve exact Arabic {«...»} for Quranic citations and Had
                   model: 'deepseek-chat',
                   messages: [
                     { role: 'system', content: systemPrompt },
-                    { role: 'user', content: arPassage }
+                    { role: 'user', content: userPrompt }
                   ],
                   temperature: 0.1,
-                  max_tokens: 2048
+                  max_tokens: 4096
                 })
-              }, 12000);
+              }, 20000);
 
               if (fetchRes.ok) {
                 const fetchJson = await fetchRes.json();
@@ -3066,6 +3069,18 @@ Zero Emoji Policy. Preserve exact Arabic {«...»} for Quranic citations and Had
             } catch (fetchErr) {
               console.warn('Direct web fetch to DeepSeek error:', fetchErr);
             }
+          }
+        }
+
+        // Cleanly parse out TRANSLATION: and Section Title if structured
+        if (translatedText && translatedText.includes('TRANSLATION:')) {
+          const parts = translatedText.split('TRANSLATION:');
+          const header = parts[0];
+          translatedText = parts[1].trim();
+
+          const titleMatch = header.match(/(?:ENGLISH_TITLE|TITLE_SQ|TITLE_[A-Z]+):\s*([^\r\n]+)/i);
+          if (titleMatch && titleMatch[1].trim()) {
+            sectionTitle = titleMatch[1].trim();
           }
         }
 
@@ -3085,6 +3100,7 @@ Verbatim authorial rendering: The primary existential reality is delineated acco
 
         translatedSections.push({
           index: i + 1,
+          title: sectionTitle,
           arabic: arPassage,
           translation: translatedText
         });
@@ -3111,7 +3127,7 @@ Verbatim authorial rendering: The primary existential reality is delineated acco
       // Chapter 1..N
       translatedSections.forEach((sec, idx) => {
         const href = `chapter_${idx + 1}.xhtml`;
-        const title = `Section ${sec.index}: Epistemic Dialectic`;
+        const title = sec.title || `Section ${sec.index}: Epistemic Dialectic`;
         toc.push({ href, title });
 
         const paras = [];
