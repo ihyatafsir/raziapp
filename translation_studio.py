@@ -28,6 +28,20 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from ebooklib import epub
 
+# Hook local AynEngine AI paths for Authentic Zero-Loss Active-RAG Translation
+for p in [Path("/home/absolut7/aynengineai"), Path("/home/absolut7/.gemini/antigravity/scratch/translation_engine_framework"), Path("/home/absolut7/Documents/26apps/aynengineai")]:
+    if p.exists() and str(p.resolve()) not in sys.path:
+        sys.path.insert(0, str(p.resolve()))
+
+try:
+    from core.lexicographical_engine import LexicographicalTranslationEngine
+    LOCAL_AYNENGINE_AVAILABLE = True
+    print("[AynStudio] Successfully hooked local AynEngine LexicographicalTranslationEngine with Quad-Lexical Active-RAG!")
+except Exception as e:
+    print(f"[AynStudio] Notice: LexicographicalTranslationEngine import: {e}")
+    LOCAL_AYNENGINE_AVAILABLE = False
+
+
 LATIN_ALIASES = {
     'avicenna': 'ibn sina',
     'averroes': 'ibn rushd',
@@ -639,8 +653,42 @@ class AynTranslationStudio:
         book_title_en: str,
         section_idx: int,
         target_lang: str = "en",
-        session_lexicon: Optional[Dict[str, Any]] = None
+        session_lexicon: Optional[Dict[str, Any]] = None,
+        api_key: Optional[str] = None
     ) -> Dict[str, Any]:
+        if session_lexicon is None:
+            session_lexicon = {}
+
+        effective_key = api_key or self.api_key
+
+        # 1. Authentic Local AynEngine Active-RAG Execution
+        if LOCAL_AYNENGINE_AVAILABLE:
+            try:
+                engine = LexicographicalTranslationEngine(
+                    author=author,
+                    book_title_ar=book_title_ar,
+                    book_title_en=book_title_en,
+                    api_key=effective_key,
+                    base_url=self.base_url,
+                    model=self.model,
+                    target_lang=target_lang
+                )
+                res = engine.translate_passage(passage_text, title_ar=f"المقطع {section_idx}")
+                if hasattr(engine, 'used_roots'):
+                    for r in engine.used_roots:
+                        if r not in session_lexicon:
+                            session_lexicon[r] = engine.get_quad_anchor_summary(r)
+
+                return {
+                    "index": section_idx,
+                    "title_ar": res.get("title_ar", f"المقطع {section_idx}"),
+                    "title_target": res.get("title_en", res.get("title_target", f"Section {section_idx}")),
+                    "anchors": res.get("anchors", ""),
+                    "arabic_text": passage_text,
+                    "translation": res.get("translation", res.get("content", ""))
+                }
+            except Exception as e:
+                print(f"[AynStudio] Local Lexicographical engine note: {e}. Falling back to built-in pipeline...")
         if session_lexicon is None:
             session_lexicon = {}
         rag_context = self.build_active_rag_context(passage_text, session_lexicon)

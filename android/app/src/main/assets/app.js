@@ -700,81 +700,117 @@ function initEpubPageTurnEngine() {
     nextEpubPage();
   });
 
-  // Touch Swipe Gesture Handling with Resistance, Velocity & Wipe Animation
-  if (viewport) {
-    let startX = 0;
-    let startY = 0;
-    let deltaX = 0;
-    let startTime = 0;
-    let isSwiping = false;
+  // Unified Touch Swipe Gesture & Tap Navigation Engine
+  const gestureTargets = [viewport, document.getElementById('view-epub-reader')].filter(Boolean);
+  
+  let startX = 0;
+  let startY = 0;
+  let deltaX = 0;
+  let deltaY = 0;
+  let startTime = 0;
+  let isSwiping = false;
+  let hasMovedHorizontally = false;
 
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) return;
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      startTime = Date.now();
-      deltaX = 0;
-      isSwiping = true;
+  const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    if (e.target.closest('.epub-hud, .typography-modal, button, select, input')) return;
 
-      const track = document.getElementById('epub-pages-track');
-      if (track) track.style.transition = 'none';
-      if (wipeShadow) wipeShadow.style.transition = 'none';
-    }, { passive: true });
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startTime = Date.now();
+    deltaX = 0;
+    deltaY = 0;
+    isSwiping = true;
+    hasMovedHorizontally = false;
 
-    viewport.addEventListener('touchmove', (e) => {
-      if (!isSwiping || e.touches.length !== 1) return;
-      const currentX = e.touches[0].clientX;
-      const currentY = e.touches[0].clientY;
-      deltaX = currentX - startX;
-      const deltaY = currentY - startY;
+    const track = document.getElementById('epub-pages-track');
+    if (track) track.style.transition = 'none';
+    if (wipeShadow) wipeShadow.style.transition = 'none';
+  };
 
-      // Only handle horizontal swipes
-      if (Math.abs(deltaX) > Math.abs(deltaY) + 4) {
-        const track = document.getElementById('epub-pages-track');
-        if (track) {
-          const currentOffset = -state.currentEpubPageIndex * 100;
-          const pxOffsetPct = (deltaX / viewport.clientWidth) * 100;
-          track.style.transform = `translate3d(${currentOffset + pxOffsetPct}%, 0, 0)`;
-        }
+  const handleTouchMove = (e) => {
+    if (!isSwiping || e.touches.length !== 1) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    deltaX = currentX - startX;
+    deltaY = currentY - startY;
 
-        if (wipeShadow) {
-          const shadowOpacity = Math.min(0.85, Math.abs(deltaX) / (viewport.clientWidth * 0.4));
-          wipeShadow.style.opacity = shadowOpacity.toString();
-        }
-      }
-    }, { passive: true });
-
-    viewport.addEventListener('touchend', () => {
-      if (!isSwiping) return;
-      isSwiping = false;
-      const timeElapsed = Math.max(1, Date.now() - startTime);
-      const velocity = Math.abs(deltaX) / timeElapsed; // px per ms
+    if (Math.abs(deltaX) > 6 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      hasMovedHorizontally = true;
+      if (e.cancelable) e.preventDefault();
 
       const track = document.getElementById('epub-pages-track');
-      if (track) {
-        track.style.transition = 'transform 0.32s cubic-bezier(0.18, 0.9, 0.25, 1)';
-      }
-      if (wipeShadow) {
-        wipeShadow.style.transition = 'opacity 0.25s ease';
-        wipeShadow.style.opacity = '0';
+      const vWidth = viewport?.clientWidth || window.innerWidth || 360;
+      if (track && vWidth > 0) {
+        const currentOffset = -state.currentEpubPageIndex * 100;
+        const pxOffsetPct = (deltaX / vWidth) * 100;
+        track.style.transform = `translate3d(${currentOffset + pxOffsetPct}%, 0, 0)`;
       }
 
-      // Quick flick or drag past threshold
-      const isFlick = velocity > 0.38 && Math.abs(deltaX) > 20;
-      const isDrag = Math.abs(deltaX) > 42;
+      if (wipeShadow && vWidth > 0) {
+        const shadowOpacity = Math.min(0.85, Math.abs(deltaX) / (vWidth * 0.35));
+        wipeShadow.style.opacity = shadowOpacity.toString();
+      }
+    }
+  };
 
-      if ((deltaX < 0 && (isFlick || isDrag))) {
+  const handleTouchEnd = () => {
+    if (!isSwiping) return;
+    isSwiping = false;
+    const timeElapsed = Math.max(1, Date.now() - startTime);
+    const velocity = Math.abs(deltaX) / timeElapsed; // px per ms
+
+    const track = document.getElementById('epub-pages-track');
+    if (track) {
+      track.style.transition = 'transform 0.28s cubic-bezier(0.18, 0.9, 0.25, 1)';
+    }
+    if (wipeShadow) {
+      wipeShadow.style.transition = 'opacity 0.22s ease';
+      wipeShadow.style.opacity = '0';
+    }
+
+    const isFlick = velocity > 0.22 && Math.abs(deltaX) > 18;
+    const isDrag = Math.abs(deltaX) > 28;
+
+    if (hasMovedHorizontally && (isFlick || isDrag)) {
+      if (deltaX < 0) {
+        // Swiped Left -> Next Page
         pulseEdgeIndicator('right');
         nextEpubPage();
-      } else if ((deltaX > 0 && (isFlick || isDrag))) {
+      } else {
+        // Swiped Right -> Previous Page
         pulseEdgeIndicator('left');
         prevEpubPage();
-      } else {
-        // Snap back to current page
-        goToEpubPage(state.currentEpubPageIndex);
       }
-    }, { passive: true });
-  }
+    } else if (!hasMovedHorizontally || (Math.abs(deltaX) < 14 && Math.abs(deltaY) < 14 && timeElapsed < 380)) {
+      // Tap on screen! (Left 28% -> prev, Right 28% -> next, Center -> toggle HUD)
+      const vWidth = window.innerWidth || viewport?.clientWidth || 360;
+      const tapRatio = startX / vWidth;
+
+      if (tapRatio < 0.28) {
+        pulseEdgeIndicator('left');
+        prevEpubPage();
+      } else if (tapRatio > 0.72) {
+        pulseEdgeIndicator('right');
+        nextEpubPage();
+      } else {
+        if (state.isTypographyOpen) {
+          closeTypographyPanel();
+        } else {
+          toggleEpubHud();
+        }
+      }
+    } else {
+      // Rebound to active page
+      goToEpubPage(state.currentEpubPageIndex);
+    }
+  };
+
+  gestureTargets.forEach(el => {
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+  });
 }
 
 function pulseEdgeIndicator(side) {
@@ -2071,13 +2107,15 @@ function initReaderSwipeNavigation() {
     if (!isSwiping || state.isEpubMode) return;
     isSwiping = false;
 
-    // Detect definitive horizontal swipe (horizontal movement > vertical movement * 1.3 and > 45px)
-    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 45) {
+    // Detect definitive horizontal swipe (horizontal movement > vertical movement * 1.15 and > 30px)
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.15 && Math.abs(deltaX) > 30) {
       if (deltaX < 0) {
-        // Swipe left -> next chapter/page
+        // Swipe left -> next chapter
+        pulseSwipeIndicator('right');
         window.slideChapter('next');
       } else {
-        // Swipe right -> prev chapter/page
+        // Swipe right -> prev chapter
+        pulseSwipeIndicator('left');
         window.slideChapter('prev');
       }
     }
@@ -3207,10 +3245,35 @@ function initTranslationStudio() {
         const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
         const { systemPrompt, userPrompt } = ragContext;
 
-        // Attempt Translation via DeepSeek Flash 4.1
+        // Attempt Translation via DeepSeek Flash 4.1 with Active-RAG
         if (aiEngineChoice === 'deepseek' && activeApiKey) {
-          // 1. Try Native Android Bridge (Zero CORS)
-          if (window.AndroidBridge && typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
+          // 1. Try Local AynEngine Server endpoint (Runs authentic local LexicographicalTranslationEngine)
+          try {
+            const srvRes = await fetchWithTimeout(getApiUrl('/api/translation/translate_chunk'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: arPassage,
+                author: studioSelectedSource?.author || 'Imam Fakhr al-Din al-Razi',
+                book_title_ar: studioSelectedSource?.title_ar || 'كتاب كلاسيكي',
+                book_title_en: studioSelectedSource?.title_en || 'Classical Treatise',
+                target_lang: targetLang,
+                api_key: activeApiKey
+              })
+            }, 25000);
+            if (srvRes.ok) {
+              const srvJson = await srvRes.json();
+              if (srvJson && srvJson.translation) {
+                translatedText = srvJson.translation;
+                if (srvJson.title_target) sectionTitle = srvJson.title_target;
+              }
+            }
+          } catch (srvErr) {
+            console.warn('Server translate_chunk attempt note:', srvErr);
+          }
+
+          // 2. Try Native Android Bridge (Zero CORS) with client Active-RAG context
+          if (!translatedText && window.AndroidBridge && typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
             try {
               const resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, 'deepseek-chat');
               const resJson = JSON.parse(resJsonStr || '{}');
@@ -3222,7 +3285,7 @@ function initTranslationStudio() {
             }
           }
 
-          // 2. Try Web fetch if native bridge was not available
+          // 3. Try Web fetch with client Active-RAG context
           if (!translatedText) {
             try {
               const fetchRes = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {

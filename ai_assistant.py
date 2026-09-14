@@ -38,8 +38,14 @@ class RaziAiAssistant:
 
     def _init_deepseek(self):
         try:
+            import sys
+            from pathlib import Path
+            for p in [Path('/home/absolut7/aynengineai'), Path('/home/absolut7/.gemini/antigravity/scratch/translation_engine_framework')]:
+                if p.exists() and str(p.resolve()) not in sys.path:
+                    sys.path.insert(0, str(p.resolve()))
             from core.coding_engine import AynCodingEngine
-            self.deepseek_engine = AynCodingEngine(provider="deepseek", model="deepseek-flash")
+            self.deepseek_engine = AynCodingEngine(model="deepseek-flash")
+            print("[RaziAI] AynCodingEngine successfully initialized!")
         except Exception as e:
             print(f"[RaziAI] Notice: AynCodingEngine deepseek init: {e}")
 

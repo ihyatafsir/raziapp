@@ -683,6 +683,7 @@ button {
   top: 52px;
   bottom: 48px;
   z-index: 20;
+  pointer-events: none; /* Touches pass through to viewport for smooth swiping */
 }
 
 .epub-tap-zone.zone-left {
@@ -736,7 +737,13 @@ button {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none; /* Enables precise custom swipe gesture handling without browser cancellation */
   perspective: 1200px;
+}
+
+.epub-pages-track,
+.epub-page-slide {
+  touch-action: none;
 }
 
 /* Dynamic Page Wipe Edge Shadow */

@@ -82,6 +82,15 @@ class TranslationStartRequest(BaseModel):
     edition_mode: str = "bilingual"  # "bilingual" or "pure"
     include_rag_glossary: bool = True
     max_chunks: Optional[int] = None
+    api_key: Optional[str] = None
+
+class ChunkTranslationRequest(BaseModel):
+    text: str
+    author: Optional[str] = "Imam Fakhr al-Din al-Razi"
+    book_title_ar: Optional[str] = "كتاب كلاسيكي"
+    book_title_en: Optional[str] = "Classical Treatise"
+    target_lang: Optional[str] = "en"
+    api_key: Optional[str] = None
 
 class UploadFileRequest(BaseModel):
     filename: str
@@ -343,8 +352,8 @@ def get_available_voices():
 def download_android_apk():
     """Serves the compiled RaziApp Android APK package."""
     candidates = [
-        BASE_DIR / "raziapp-v2.3.6.apk",
-        BASE_DIR / "public" / "raziapp-v2.3.6.apk",
+        BASE_DIR / "raziapp-v2.3.7.apk",
+        BASE_DIR / "public" / "raziapp-v2.3.7.apk",
         BASE_DIR / "public" / "raziapp.apk",
         BASE_DIR / "raziapp.apk",
         BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk",
@@ -357,7 +366,7 @@ def download_android_apk():
         raise HTTPException(status_code=404, detail="APK binary not found.")
     return FileResponse(
         path=str(apk_path),
-        filename="raziapp-v2.3.6.apk",
+        filename="raziapp-v2.3.7.apk",
         media_type="application/vnd.android.package-archive"
     )
 
@@ -423,6 +432,31 @@ def upload_manuscript_file(req: UploadFileRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File extraction failed: {e}")
+
+@app.post("/api/translation/translate_chunk")
+def translate_single_chunk(req: ChunkTranslationRequest):
+    """Translates a single passage using authentic local AynEngine Active-RAG + DeepSeek."""
+    try:
+        session_lexicon = {}
+        res = translation_studio.translate_passage(
+            passage_text=req.text,
+            author=req.author,
+            book_title_ar=req.book_title_ar,
+            book_title_en=req.book_title_en,
+            section_idx=1,
+            target_lang=req.target_lang,
+            session_lexicon=session_lexicon,
+            api_key=req.api_key
+        )
+        return {
+            "success": True,
+            "translation": res.get("translation", ""),
+            "title_target": res.get("title_target", "Section 1"),
+            "anchors": res.get("anchors", ""),
+            "session_lexicon": session_lexicon
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/translation/start")
 def start_translation(req: TranslationStartRequest):
