@@ -117,9 +117,7 @@ PROVIDER_DEFAULTS = {
     "openai": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini"},
     "gemini": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai", "model": "gemini-2.0-flash"},
     "openrouter": {"base_url": "https://openrouter.ai/api/v1", "model": "deepseek/deepseek-chat"},
-    "groq": {"base_url": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile"},
-    "custom": {"base_url": "http://localhost:11434/v1", "model": "qwen2.5:7b"},
-    "rag_standalone": {"base_url": "", "model": "offline-rag"}
+    "groq": {"base_url": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile"}
 }
 
 class AynTranslationStudio:

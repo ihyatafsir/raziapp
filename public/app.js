@@ -2336,17 +2336,17 @@ let ragLookupCache = null;
 const AI_PROVIDERS = {
   deepseek: {
     id: 'deepseek',
-    name: 'DeepSeek AI',
+    name: 'DeepSeek Flash',
     defaultModel: 'deepseek-chat',
     models: [
-      { id: 'deepseek-chat', name: 'DeepSeek Chat (V3 / Flash)' },
+      { id: 'deepseek-chat', name: 'DeepSeek Flash (v4.1)' },
       { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (R1)' }
     ],
     endpoint: 'https://api.deepseek.com/chat/completions',
     keyPrefix: 'sk-',
     keyPlaceholder: 'Paste your DeepSeek API Key (sk-...)',
-    keyLabel: 'DeepSeek API Key',
-    helpText: 'Requires personal DeepSeek API key. Fast, cost-effective, and scholarly.',
+    keyLabel: 'DeepSeek Flash API Key',
+    helpText: 'Requires personal DeepSeek API key (sk-...). Grounded in AynEngine Quad-Lexical Active-RAG.',
     needsKey: true
   },
   openai: {
@@ -2362,7 +2362,7 @@ const AI_PROVIDERS = {
     keyPrefix: 'sk-',
     keyPlaceholder: 'Paste your OpenAI API Key (sk-...)',
     keyLabel: 'OpenAI API Key',
-    helpText: 'Requires personal OpenAI API key (sk-...).',
+    helpText: 'Requires personal OpenAI API key (sk-...). Grounded in AynEngine Quad-Lexical Active-RAG.',
     needsKey: true
   },
   gemini: {
@@ -2378,7 +2378,7 @@ const AI_PROVIDERS = {
     keyPrefix: 'AIza',
     keyPlaceholder: 'Paste your Google Gemini API Key (AIza...)',
     keyLabel: 'Google Gemini API Key',
-    helpText: 'Get a free API key from Google AI Studio (aistudio.google.com).',
+    helpText: 'Free API key from Google AI Studio (aistudio.google.com). Grounded in AynEngine Quad-Lexical Active-RAG.',
     needsKey: true
   },
   openrouter: {
@@ -2387,7 +2387,7 @@ const AI_PROVIDERS = {
     defaultModel: 'anthropic/claude-3.5-sonnet',
     models: [
       { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
-      { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
+      { id: 'deepseek/deepseek-chat', name: 'DeepSeek Flash / V3' },
       { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct' },
       { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B Instruct' }
     ],
@@ -2411,22 +2411,8 @@ const AI_PROVIDERS = {
     keyPrefix: 'gsk_',
     keyPlaceholder: 'Paste your Groq API Key (gsk_...)',
     keyLabel: 'Groq API Key',
-    helpText: 'Ultra-fast inference on Groq LPUs.',
+    helpText: 'Ultra-fast inference on Groq LPUs. Grounded in AynEngine Quad-Lexical Active-RAG.',
     needsKey: true
-  },
-  rag_standalone: {
-    id: 'rag_standalone',
-    name: 'AynEngine Quad-Lexical Active-RAG (100% Offline)',
-    defaultModel: 'offline-rag',
-    models: [
-      { id: 'offline-rag', name: 'Authentic Quad-Lexical Synthesis' }
-    ],
-    endpoint: '',
-    keyPrefix: '',
-    keyPlaceholder: '',
-    keyLabel: '',
-    helpText: 'Authentic AynEngine AI Active-RAG with 4,054 embedded roots and Sibawayh grammatical canons. Zero internet connection required.',
-    needsKey: false
   }
 };
 
@@ -2470,37 +2456,27 @@ function syncStudioProviderUI(providerId) {
   const modelSelect = document.getElementById('studio-ai-model');
   const modelContainer = document.getElementById('studio-model-container');
   if (modelSelect && modelContainer) {
-    if (providerId === 'rag_standalone') {
-      modelContainer.style.display = 'none';
-    } else {
-      modelContainer.style.display = 'flex';
-      const savedModel = localStorage.getItem(`raziapp_model_${providerId}`) || p.defaultModel;
-      modelSelect.innerHTML = p.models.map(m => `<option value="${m.id}" ${m.id === savedModel ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
-    }
+    modelContainer.style.display = 'flex';
+    const savedModel = localStorage.getItem(`raziapp_model_${providerId}`) || p.defaultModel;
+    modelSelect.innerHTML = p.models.map(m => `<option value="${m.id}" ${m.id === savedModel ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
   }
 
-
-
-  // 3. API Key container visibility & labels
+  // 2. API Key container labels and placeholders
   const keyContainer = document.getElementById('studio-api-key-container');
   const keyLabel = document.getElementById('studio-api-key-label');
   const keyInput = document.getElementById('studio-api-key-input');
   const keyHelp = document.getElementById('studio-api-key-help');
 
   if (keyContainer) {
-    if (providerId === 'rag_standalone') {
-      keyContainer.style.display = 'none';
-    } else {
-      keyContainer.style.display = 'flex';
-      if (keyLabel) keyLabel.textContent = `${p.keyLabel}:`;
-      if (keyInput) {
-        keyInput.placeholder = p.keyPlaceholder;
-        const curKey = getActiveProviderKey(providerId);
-        keyInput.value = curKey;
-        updateStudioApiKeyBadge(providerId, curKey);
-      }
-      if (keyHelp) keyHelp.textContent = p.helpText;
+    keyContainer.style.display = 'flex';
+    if (keyLabel) keyLabel.textContent = `${p.keyLabel}:`;
+    if (keyInput) {
+      keyInput.placeholder = p.keyPlaceholder;
+      const curKey = getActiveProviderKey(providerId);
+      keyInput.value = curKey;
+      updateStudioApiKeyBadge(providerId, curKey);
     }
+    if (keyHelp) keyHelp.textContent = p.helpText;
   }
 }
 
@@ -3465,9 +3441,9 @@ function initTranslationStudio() {
     const currentProviderCfg = AI_PROVIDERS[aiEngineChoice] || AI_PROVIDERS.deepseek;
     const activeApiKey = getActiveProviderKey(aiEngineChoice);
 
-    // Enforce API key requirement if provider needs one
-    if (currentProviderCfg.needsKey && !activeApiKey) {
-      showToast(`${currentProviderCfg.name} Key Required: Please paste your API key above or select Offline Synthesis.`);
+    // Enforce API key requirement for cloud provider
+    if (!activeApiKey) {
+      showToast(`${currentProviderCfg.name} Key Required: Please paste your API key (sk-...) above.`);
       const keyInput = document.getElementById('studio-api-key-input');
       if (keyInput) {
         keyInput.focus();
@@ -3541,84 +3517,80 @@ function initTranslationStudio() {
         const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
         const { systemPrompt, userPrompt } = ragContext;
 
-        // Attempt Translation via Selected Provider with Active-RAG
-        if (aiEngineChoice !== 'rag_standalone' && activeApiKey) {
-          // 1. Try Local AynEngine Server endpoint (Authentic Local Active-RAG)
+        // Translation via Cloud LLM with AynEngine Active-RAG Grounding
+        try {
+          const srvRes = await fetchWithTimeout(getApiUrl('/api/translation/translate_chunk'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: arPassage,
+              author: studioSelectedSource?.author || 'Imam Fakhr al-Din al-Razi',
+              book_title_ar: studioSelectedSource?.title_ar || 'كتاب كلاسيكي',
+              book_title_en: studioSelectedSource?.title_en || 'Classical Treatise',
+              target_lang: targetLang,
+              api_key: activeApiKey,
+              provider: aiEngineChoice,
+              base_url: activeEndpoint,
+              model: activeModel
+            })
+          }, 25000);
+          if (srvRes.ok) {
+            const srvJson = await srvRes.json();
+            if (srvJson && srvJson.translation) {
+              translatedText = srvJson.translation;
+              if (srvJson.title_target) sectionTitle = srvJson.title_target;
+            }
+          }
+        } catch (srvErr) {
+          console.warn('Server translate_chunk attempt note:', srvErr);
+        }
+
+        // 2. Try Native Android Bridge (Zero CORS) with client Active-RAG context
+        if (!translatedText && window.AndroidBridge) {
           try {
-            const srvRes = await fetchWithTimeout(getApiUrl('/api/translation/translate_chunk'), {
+            let resJsonStr = '';
+            if (typeof window.AndroidBridge.executeLlmCall === 'function') {
+              resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, userPrompt, activeApiKey, activeModel, activeEndpoint);
+            } else if (typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
+              resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, activeModel);
+            }
+            const resJson = JSON.parse(resJsonStr || '{}');
+            if (resJson.success && resJson.content) {
+              translatedText = resJson.content;
+            } else if (resJson.error) {
+              console.warn('AndroidBridge LLM call notice:', resJson.error);
+            }
+          } catch (err) {
+            console.warn('Native LLM bridge call error:', err);
+          }
+        }
+
+        // 3. Try direct client Web fetch with client Active-RAG context
+        if (!translatedText) {
+          try {
+            const fetchRes = await fetchWithTimeout(activeEndpoint, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${activeApiKey}`
+              },
               body: JSON.stringify({
-                text: arPassage,
-                author: studioSelectedSource?.author || 'Imam Fakhr al-Din al-Razi',
-                book_title_ar: studioSelectedSource?.title_ar || 'كتاب كلاسيكي',
-                book_title_en: studioSelectedSource?.title_en || 'Classical Treatise',
-                target_lang: targetLang,
-                api_key: activeApiKey,
-                provider: aiEngineChoice,
-                base_url: activeEndpoint,
-                model: activeModel
+                model: activeModel,
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 4096
               })
             }, 25000);
-            if (srvRes.ok) {
-              const srvJson = await srvRes.json();
-              if (srvJson && srvJson.translation) {
-                translatedText = srvJson.translation;
-                if (srvJson.title_target) sectionTitle = srvJson.title_target;
-              }
-            }
-          } catch (srvErr) {
-            console.warn('Server translate_chunk attempt note:', srvErr);
-          }
 
-          // 2. Try Native Android Bridge (Zero CORS) with client Active-RAG context
-          if (!translatedText && window.AndroidBridge) {
-            try {
-              let resJsonStr = '';
-              if (typeof window.AndroidBridge.executeLlmCall === 'function') {
-                resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, userPrompt, activeApiKey || '', activeModel, activeEndpoint);
-              } else if (typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
-                resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey || '', activeModel);
-              }
-              const resJson = JSON.parse(resJsonStr || '{}');
-              if (resJson.success && resJson.content) {
-                translatedText = resJson.content;
-              } else if (resJson.error) {
-                console.warn('AndroidBridge LLM call notice:', resJson.error);
-              }
-            } catch (err) {
-              console.warn('Native LLM bridge call error:', err);
+            if (fetchRes.ok) {
+              const fetchJson = await fetchRes.json();
+              translatedText = fetchJson.choices?.[0]?.message?.content || '';
             }
-          }
-
-          // 3. Try direct client Web fetch with client Active-RAG context
-          if (!translatedText) {
-            try {
-              const fetchHeaders = { 'Content-Type': 'application/json' };
-              if (activeApiKey) {
-                fetchHeaders['Authorization'] = `Bearer ${activeApiKey}`;
-              }
-              const fetchRes = await fetchWithTimeout(activeEndpoint, {
-                method: 'POST',
-                headers: fetchHeaders,
-                body: JSON.stringify({
-                  model: activeModel,
-                  messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userPrompt }
-                  ],
-                  temperature: 0.1,
-                  max_tokens: 4096
-                })
-              }, 25000);
-
-              if (fetchRes.ok) {
-                const fetchJson = await fetchRes.json();
-                translatedText = fetchJson.choices?.[0]?.message?.content || '';
-              }
-            } catch (fetchErr) {
-              console.warn('Direct web fetch error:', fetchErr);
-            }
+          } catch (fetchErr) {
+            console.warn('Direct web fetch error:', fetchErr);
           }
         }
 
@@ -3634,18 +3606,8 @@ function initTranslationStudio() {
           }
         }
 
-        // 3. Autonomous Scholarly Synthesis Engine (100% Standalone Offline Fallback)
         if (!translatedText) {
-          const rootHighlights = extractedRoots.slice(0, 3).map(r => `[Root ${r.root} (${r.source}): "${r.meaning.substring(0, 100)}..."]`).join('\n');
-          translatedText = `[AynEngine Autonomous Scholarly Translation]
-"${arPassage}"
-
-Dialectical Scholastic Exposition:
-The author formulates the demonstrative premise under the canon of ${sibRule.name}.
-Philological Scholia:
-${rootHighlights}
-
-Verbatim authorial rendering: The primary existential reality is delineated according to necessary ontological equilibrium. Every contingent substance demands a determining agent to specify its actuality over nonexistence.`;
+          throw new Error(`Cloud API request to ${currentProviderCfg.name} failed. Please verify your API key and network connection.`);
         }
 
         translatedSections.push({
