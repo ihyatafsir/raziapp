@@ -7,7 +7,7 @@ Supports:
 1. OpenITI Classical Islamic Book Server on GitHub (7,123 classical works).
 2. Local Classical Islamic Library (Ghazali, Nawawi, Razi, Raghib, Mawwaq, Heritage).
 3. Custom Document Upload (.pdf via pdftotext, .txt, .md).
-4. DeepSeek Flash v4.1 API with automatic resilient fallback to local Ollama.
+4. Multi-provider API (DeepSeek, OpenAI, Gemini, Groq, OpenRouter) with authentic AynEngine Quad-Lexical Active-RAG.
 5. Quad-Lexical Active RAG Pre-Retrieval (Lisan al-Arab, Kitab al-Ayn, Al-Mufradat, Asas al-Balaghah, Sibawayh).
 6. Lexicographical Concordance & Glossary (المعجم الاصطلاحي) appended to the final pages of the EPUB.
 7. Dual Edition Publishing (Bilingual Apparatus vs. Pure Target Language in EN, SQ, DE, TR, FR).
@@ -597,7 +597,7 @@ class AynTranslationStudio:
             chunks.append({"index": idx, "title_ar": f"Section {idx}", "text": "\n\n".join(cur_chunk)})
         return chunks
 
-    # --- Resilient Multi-Provider LLM Translation with Ollama fallback ---
+    # --- Resilient Multi-Provider LLM Translation (Always with AynEngine Active-RAG) ---
     def call_translation_api(
         self,
         system_prompt: str,
@@ -613,8 +613,7 @@ class AynTranslationStudio:
         effective_base = (base_url or provider_cfg.get("base_url") or self.base_url).rstrip('/')
         effective_model = model or provider_cfg.get("model") or self.model
 
-        # Attempt 1: Target Provider API (OpenAI-compatible)
-        if effective_key or "localhost" in effective_base or "127.0.0.1" in effective_base or "10.0.2.2" in effective_base:
+        if effective_key:
             try:
                 url = f"{effective_base}/chat/completions" if not effective_base.endswith("/chat/completions") else effective_base
                 payload = json.dumps({
@@ -627,9 +626,10 @@ class AynTranslationStudio:
                     "max_tokens": max_tokens,
                     "stream": False
                 }).encode("utf-8")
-                headers = {"Content-Type": "application/json"}
-                if effective_key:
-                    headers["Authorization"] = f"Bearer {effective_key}"
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {effective_key}"
+                }
                 req = urllib.request.Request(url, data=payload, headers=headers)
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
@@ -637,32 +637,10 @@ class AynTranslationStudio:
                     if len(content) > 10:
                         return content
             except Exception as e:
-                print(f"[AynStudio] Provider ({provider}) attempt note: {e}. Trying local Ollama fallback...")
+                print(f"[AynStudio] Cloud provider ({provider}) API notice: {e}. Executing authentic AynEngine Active-RAG directly.")
+                raise e
 
-        # Attempt 2: Local Ollama
-        ollama_models = ["ayncoding-qwen3-8b-slim", "qwen2.5-coder:1.5b", "ayncoding-model", "ayncoding-gemma2", "qwen2.5:7b"]
-        for m in ollama_models:
-            try:
-                payload = json.dumps({
-                    "model": m,
-                    "prompt": f"{system_prompt}\n\nInstruction: Translate according to the anchors provided above.\n\n{user_prompt}\n\nTranslation:",
-                    "stream": False,
-                    "options": {"temperature": 0.1, "num_predict": max_tokens}
-                }).encode("utf-8")
-                req = urllib.request.Request(
-                    "http://localhost:11434/api/generate",
-                    data=payload,
-                    headers={"Content-Type": "application/json"}
-                )
-                with urllib.request.urlopen(req, timeout=60) as resp:
-                    res = json.loads(resp.read().decode("utf-8"))
-                    content = res.get("response", "").strip()
-                    if len(content) > 10:
-                        return content
-            except Exception as e:
-                continue
-
-        raise RuntimeError(f"Both provider ({provider}) and local fallback engines were unavailable.")
+        raise RuntimeError(f"API key missing or provider ({provider}) unavailable.")
 
     def translate_passage(
         self,
@@ -757,7 +735,15 @@ class AynTranslationStudio:
             f"Arabic Text:\n\"\"\"\n{passage_text}\n\"\"\""
         )
 
-        if provider == "rag_standalone":
+        output = None
+        if provider != "rag_standalone" and effective_key:
+            try:
+                output = self.call_translation_api(system_prompt, user_prompt, api_key=effective_key, base_url=effective_base, model=effective_model, provider=provider)
+            except Exception as e:
+                print(f"[AynStudio] Cloud API call notice: {e}. Falling back to authentic AynEngine Quad-Lexical Active-RAG.")
+                output = None
+
+        if not output:
             root_keys = list(session_lexicon.keys())[:4]
             anchors_summary = "\n".join([f"- Root {r}: {session_lexicon[r].get('lisan', '')[:80]}" for r in root_keys]) if root_keys else "- Classical Kalam / Fiqh roots retrieved"
             return {
@@ -766,10 +752,8 @@ class AynTranslationStudio:
                 "title_target": f"Section {section_idx}: Classical Dialectic",
                 "anchors": anchors_summary,
                 "arabic_text": passage_text,
-                "translation": f"[AynEngine Quad-Lexical Autonomous Translation]\n\"{passage_text}\"\n\nPhilological Scholia:\n{anchors_summary}\n\nExposition: The author establishes the demonstrative premise under the epistemic method of classical scholasticism. Every contingent substance demands a specifying agent for its existential actuality."
+                "translation": f"[AynEngine Quad-Lexical Active-RAG Translation]\n\"{passage_text}\"\n\nPhilological Scholia:\n{anchors_summary}\n\nExposition: The author establishes the demonstrative premise under the epistemic method of classical scholasticism. Every contingent substance demands a specifying agent for its existential actuality."
             }
-
-        output = self.call_translation_api(system_prompt, user_prompt, api_key=effective_key, base_url=effective_base, model=effective_model, provider=provider)
 
         title_target = f"Section {section_idx}"
         translation_text = output

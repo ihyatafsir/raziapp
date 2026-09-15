@@ -123,7 +123,7 @@ def get_health():
         "pure_en_total": len([b for b in current_catalog if b.get("is_pure_en")]),
         "bilingual_total": len([b for b in current_catalog if b.get("is_bilingual")]),
         "sq_total": len([b for b in current_catalog if b.get("is_sq")]),
-        "ai_engine": "DeepSeek Flash 4.1 + Ollama Fallback",
+        "ai_engine": "AynEngine AI Quad-Lexical Active-RAG",
         "tts_engine": "Classical Arabic Recitation"
     }
 

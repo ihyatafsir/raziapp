@@ -14,7 +14,7 @@ echo "• Port: $PORT"
 echo "• Local URL: http://localhost:$PORT"
 echo "• Scholars: Imam Fakhr al-Din al-Razi, Imam al-Ghazali, Imam al-Nawawi"
 echo "• Audio Engine: Shaykh Hamza Yusuf Scholarly Neural Cadence"
-echo "• Dialectical AI: DeepSeek Flash 4.1 + Local Ollama Gating"
+echo "• Dialectical AI: AynEngine AI Quad-Lexical Active-RAG Studio"
 echo "========================================================================"
 
 # Kill any existing server on this port

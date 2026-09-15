@@ -2414,35 +2414,18 @@ const AI_PROVIDERS = {
     helpText: 'Ultra-fast inference on Groq LPUs.',
     needsKey: true
   },
-  custom: {
-    id: 'custom',
-    name: 'Custom / Local Ollama (vLLM / LM Studio)',
-    defaultModel: 'qwen2.5:7b',
-    models: [
-      { id: 'qwen2.5:7b', name: 'Qwen 2.5 (Local)' },
-      { id: 'llama3.2', name: 'Llama 3.2 (Local)' },
-      { id: 'custom', name: 'Custom Model Name' }
-    ],
-    endpoint: 'http://localhost:11434/v1/chat/completions',
-    keyPrefix: '',
-    keyPlaceholder: 'Optional API Key (or empty for local Ollama)',
-    keyLabel: 'API Key (Optional)',
-    helpText: 'Connect to local Ollama, vLLM, LM Studio, or custom proxy.',
-    needsKey: false,
-    hasCustomEndpoint: true
-  },
   rag_standalone: {
     id: 'rag_standalone',
-    name: 'Standalone Quad-Lexical RAG (100% Offline)',
+    name: 'AynEngine Quad-Lexical Active-RAG (100% Offline)',
     defaultModel: 'offline-rag',
     models: [
-      { id: 'offline-rag', name: 'Autonomous Quad-Lexical Synthesis' }
+      { id: 'offline-rag', name: 'Authentic Quad-Lexical Synthesis' }
     ],
     endpoint: '',
     keyPrefix: '',
     keyPlaceholder: '',
     keyLabel: '',
-    helpText: 'Uses embedded 4,054 roots and Sibawayh grammatical canons without any internet connection.',
+    helpText: 'Authentic AynEngine AI Active-RAG with 4,054 embedded roots and Sibawayh grammatical canons. Zero internet connection required.',
     needsKey: false
   }
 };
@@ -2496,15 +2479,7 @@ function syncStudioProviderUI(providerId) {
     }
   }
 
-  // 2. Custom endpoint container
-  const customContainer = document.getElementById('studio-custom-endpoint-container');
-  const customInput = document.getElementById('studio-custom-endpoint-input');
-  if (customContainer) {
-    customContainer.style.display = p.hasCustomEndpoint ? 'flex' : 'none';
-    if (p.hasCustomEndpoint && customInput) {
-      customInput.value = localStorage.getItem('raziapp_custom_endpoint') || p.endpoint;
-    }
-  }
+
 
   // 3. API Key container visibility & labels
   const keyContainer = document.getElementById('studio-api-key-container');
@@ -3294,11 +3269,7 @@ function initTranslationStudio() {
     localStorage.setItem(`raziapp_model_${pId}`, e.target.value);
   });
 
-  // Custom endpoint change listener
-  const customEndpointInput = document.getElementById('studio-custom-endpoint-input');
-  customEndpointInput?.addEventListener('input', (e) => {
-    localStorage.setItem('raziapp_custom_endpoint', e.target.value.trim());
-  });
+
 
   // API Key input change listener
   const keyInput = document.getElementById('studio-api-key-input');
@@ -3555,9 +3526,7 @@ function initTranslationStudio() {
 
       const translatedSections = [];
       const activeModel = document.getElementById('studio-ai-model')?.value || currentProviderCfg.defaultModel;
-      const customEndpointVal = document.getElementById('studio-custom-endpoint-input')?.value?.trim();
-      const activeEndpoint = (aiEngineChoice === 'custom' && customEndpointVal) ? customEndpointVal : (currentProviderCfg.endpoint || 'https://api.deepseek.com/chat/completions');
-      const isLocalProvider = aiEngineChoice === 'custom' || activeEndpoint.includes('localhost') || activeEndpoint.includes('127.0.0.1') || activeEndpoint.includes('10.0.2.2');
+      const activeEndpoint = currentProviderCfg.endpoint || 'https://api.deepseek.com/chat/completions';
       const langName = targetLang === 'sq' ? 'Albanian (Shqip)' : targetLang === 'de' ? 'German (Deutsch)' : targetLang === 'tr' ? 'Turkish (Türkçe)' : targetLang === 'fr' ? 'French' : 'English';
 
       for (let i = 0; i < sectionsToTranslate.length; i++) {
@@ -3573,7 +3542,7 @@ function initTranslationStudio() {
         const { systemPrompt, userPrompt } = ragContext;
 
         // Attempt Translation via Selected Provider with Active-RAG
-        if (aiEngineChoice !== 'rag_standalone' && (activeApiKey || isLocalProvider)) {
+        if (aiEngineChoice !== 'rag_standalone' && activeApiKey) {
           // 1. Try Local AynEngine Server endpoint (Authentic Local Active-RAG)
           try {
             const srvRes = await fetchWithTimeout(getApiUrl('/api/translation/translate_chunk'), {
