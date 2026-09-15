@@ -500,42 +500,8 @@ def setup_corpus() -> List[Dict[str, Any]]:
         }
         books.append(book_info)
 
-    # Filter: Select strictly the two latest / highest quality versions of each work
-    work_groups = {}
-    for b in books:
-        slug = b["work_slug"]
-        if slug not in work_groups:
-            work_groups[slug] = []
-        work_groups[slug].append(b)
-
-    filtered_books = []
-    for slug, group in work_groups.items():
-        # Separate pure english and bilingual lexical candidates
-        pure_cands = [b for b in group if b["is_pure_en"]]
-        bilingual_cands = [b for b in group if b["is_bilingual"]]
-        sq_cands = [b for b in group if b["is_sq"]]
-
-        pure_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-        bilingual_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-        sq_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-
-        chosen = []
-        if pure_cands:
-            chosen.append(pure_cands[0])
-        if bilingual_cands:
-            chosen.append(bilingual_cands[0])
-
-        if len(chosen) < 2:
-            group.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-            for b in group:
-                if b not in chosen and version_score(b) > 0:
-                    chosen.append(b)
-                    if len(chosen) == 2:
-                        break
-
-        filtered_books.extend(chosen[:2])
-
-    books = filtered_books
+    # Include all authenticated v4 & v5 classical masterworks with zero omissions
+    books = [b for b in books if version_score(b) > 0]
 
     # Hierarchical Sorting:
     # 1. Imam Order (Razi, Ghazali, Nawawi, Raghib, Heritage)

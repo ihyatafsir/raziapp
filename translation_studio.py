@@ -600,43 +600,74 @@ class AynTranslationStudio:
         self,
         system_prompt: str,
         user_prompt: str,
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model: Optional[str] = None,
-        provider: Optional[str] = "deepseek"
+        provider: Optional[str] = "deepseek",
+        temperature: float = 0.1,
+        max_retries: int = 5
     ) -> str:
         provider_cfg = PROVIDER_DEFAULTS.get(provider or "deepseek", PROVIDER_DEFAULTS["deepseek"])
         effective_key = api_key or self.api_key
         effective_base = (base_url or provider_cfg.get("base_url") or self.base_url).rstrip('/')
         effective_model = model or provider_cfg.get("model") or self.model
 
+        # Map common aliases (e.g., deepseek-flash -> deepseek-chat for standard endpoint compatibility)
+        if effective_model == "deepseek-flash" and "api.deepseek.com" in effective_base:
+            effective_model = "deepseek-chat"
+
         if effective_key:
-            try:
-                url = f"{effective_base}/chat/completions" if not effective_base.endswith("/chat/completions") else effective_base
-                payload = json.dumps({
-                    "model": effective_model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": max_tokens,
-                    "stream": False
-                }).encode("utf-8")
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {effective_key}"
-                }
-                req = urllib.request.Request(url, data=payload, headers=headers)
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    res = json.loads(resp.read().decode("utf-8"))
-                    content = res["choices"][0]["message"]["content"].strip()
-                    if len(content) > 10:
-                        return content
-            except Exception as e:
-                print(f"[AynStudio] Cloud provider ({provider}) API notice: {e}. Executing authentic AynEngine Active-RAG directly.")
-                raise e
+            url = f"{effective_base}/chat/completions" if not effective_base.endswith("/chat/completions") else effective_base
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            accumulated_content = ""
+
+            for attempt in range(max_retries):
+                try:
+                    payload = json.dumps({
+                        "model": effective_model,
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                        "stream": False
+                    }).encode("utf-8")
+                    headers = {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {effective_key}"
+                    }
+                    req = urllib.request.Request(url, data=payload, headers=headers)
+                    with urllib.request.urlopen(req, timeout=240) as resp:
+                        res = json.loads(resp.read().decode("utf-8"))
+                        choice = res["choices"][0]
+                        content_chunk = choice["message"]["content"]
+                        finish_reason = choice.get("finish_reason")
+
+                        accumulated_content += content_chunk
+
+                        # Zero-Loss Auto-Continuation: Detect token ceiling and continue seamlessly
+                        if finish_reason == "length":
+                            print("[AynStudio Zero-Loss] Token limit reached mid-stream. Auto-continuing...")
+                            messages.append({"role": "assistant", "content": content_chunk})
+                            messages.append({
+                                "role": "user",
+                                "content": "You reached the token limit mid-sentence. Continue the translation immediately from the exact last word, without repeating previous sentences."
+                            })
+                            continue
+                        else:
+                            return accumulated_content.strip()
+
+                except Exception as e:
+                    err_str = str(e)
+                    print(f"[AynStudio API Retry {attempt + 1}/{max_retries}] Provider notice: {err_str}")
+                    if "402" in err_str:
+                        raise RuntimeError(f"Provider balance depleted (HTTP 402): {e}")
+                    time.sleep((attempt + 1) * 2)
+
+            if accumulated_content:
+                return accumulated_content.strip()
 
         raise RuntimeError(f"API key missing or provider ({provider}) unavailable.")
 
@@ -689,7 +720,8 @@ class AynTranslationStudio:
                     "translation": res.get("translation", res.get("content", ""))
                 }
             except Exception as e:
-                print(f"[AynStudio] Local Lexicographical engine note: {e}. Falling back to built-in pipeline...")
+                print(f"[AynStudio] Local Lexicographical engine note: {e}. Falling back to unified built-in pipeline...")
+
         if session_lexicon is None:
             session_lexicon = {}
         rag_context = self.build_active_rag_context(passage_text, session_lexicon)
@@ -704,46 +736,66 @@ class AynTranslationStudio:
         target_lang_name = lang_labels.get(target_lang, target_lang.upper())
         authorial_voice = "Unë them... / Dije se..." if target_lang == "sq" else ("Ich sage... / Wisse, dass..." if target_lang == "de" else "I say... / Know that...")
 
+        if not hasattr(self, 'used_roots'):
+            self.used_roots = set()
+        roots_str = ", ".join(list(self.used_roots)[-20:]) if self.used_roots else "None"
+
         system_prompt = (
-            f"You are AynEngine AI (v5.1.0 Sovereign Dialectical Edition) - premier Quad-Lexical Classical Arabic Translation Engine.\n"
-            f"You specialize in verbatim, zero-loss scholarly translation of classical Islamic theological (Kalam), philosophical, and Quranic masterworks by {author}.\n"
+            f"You are AynEngine AI (v5.0.0 Sovereign Morphological Edition) — the premier Quad-Lexical Classical Arabic Translation Engine.\n"
+            f"You specialize in verbatim, zero-loss scholarly translation of classical Islamic theological (Kalam), philosophical, and Quranic texts by {author}.\n"
             f"Target Language: {target_lang_name}.\n\n"
-            "QUAD-LEXICAL & SYNTACTIC GROUNDING:\n"
-            f"{rag_context}\n\n"
-            "TRANSLATION STANDARDS:\n"
-            f"1. 100% Verbatim translation in the authentic 1st-person authorial voice ('{authorial_voice}').\n"
-            "2. Retain exact Quranic passages and Hadith citations intact.\n"
-            "3. Maintain strict distinction between spiritual realities (Al-Lata'if) and corporeal substances (Al-Jawahir).\n"
-            "4. Zero emojis under any circumstances.\n\n"
-            "Format your response strictly as:\n"
+            "QUAD-LEXICAL & SYNTACTIC ANCHOR CONSTELLATION:\n"
+            "Ground your translation directly in the 4 Classical Lexicons & Sibawayh:\n"
+            "1. LISAN AL-ARAB (Ibn Manzur) & KITAB AL-AYN (Al-Farahidi): Archaic root etymology and core lexicography.\n"
+            "2. AL-MUFRADAT (Al-Raghib al-Isfahani): Theological, metaphysical, and Quranic technical terminology.\n"
+            "3. ASAS AL-BALAGHAH (Al-Zamakhshari): Classical Arabic rhetoric distinguishing literal (Haqiqah) from metaphorical (Majaz) usage.\n"
+            "4. AL-KITAB (Sibawayh): Syntactic parsing rules for periodic sentence structures.\n\n"
+            f"{rag_context}\n"
+            f"AVOID RECENTLY USED ROOTS: {roots_str}\n\n"
+            "THEOLOGICAL & PHILOSOPHICAL ONTOLOGY APPARATUS (KALAM PRECISION):\n"
+            "- IMMATERIAL SPIRITUAL REALITIES (AL-LATA'IF) vs CORPOREAL SUBSTANCES (AL-JAWAHIR):\n"
+            "  * Never translate 'latifah' (لطيفة) as physical/spatial 'substance' (which conflates with Kalam jawhar/ousia).\n"
+            "  * Translate 'latifah rabbaniyyah' as 'divine subtlety [immaterial spiritual reality]' or 'subtle divine reality'.\n"
+            "  * Strictly distinguish between 'takhsis' (semantic specification/restriction) and 'naql' (lexical transfer/conversion).\n"
+            "  * Render 'musammayat' as 'referents / designated realities' and 'hudud' as 'definitions / formal boundaries'.\n"
+            "  * Render 'a'rad' as 'accidents' and 'jawhar' as 'substance' (strictly in distinction to latifah).\n\n"
+            "ZERO-LOSS SCHOLARLY STANDARDS:\n"
+            f"- 100% Verbatim translation in the authentic 1st-person authorial voice ('{authorial_voice}').\n"
+            "- ZERO text cuts, zero skipping, and zero omissions. Every single line of Arabic MUST be translated.\n"
+            "- ZERO extraneous AI commentary, modern preachiness, or moralizing additions.\n"
+            "- Retain exact Arabic script in {«...»} braces for Quranic citations and Hadith.\n"
+            "- Transliterate key technical philosophical and legal terms in parentheses.\n"
+            "- Strictly zero emojis under any circumstances.\n\n"
+            "Format your output strictly as:\n"
             f"TITLE_{target_lang.upper()}: [Concise Title in {target_lang_name}]\n"
             "QUAD_ANCHORS:\n"
             "- Root: [Arabic Root] ([Transliteration])\n"
             "  * Lisan / Ayn: [Core linguistic root meaning]\n"
-            "  * Al-Raghib: [Theological nuance]\n"
-            "  * Al-Zamakhshari: [Literal vs Metaphorical distinction]\n\n"
+            "  * Al-Raghib (Mufradat): [Theological/Kalam semantic nuance]\n"
+            "  * Al-Zamakhshari (Asas): [Literal vs Metaphorical distinction]\n"
+            "- Sibawayh Rule: [Syntactic Rule Name] ([Short rule explanation])\n\n"
             "TRANSLATION:\n"
-            f"[Verbatim 1st-person {target_lang_name} translation. Must end on a complete sentence.]"
+            f"[Verbatim 1st-person {target_lang_name} translation guided by the anchors above. MUST END ON A COMPLETE SENTENCE.]"
         )
 
         user_prompt = (
             f"Book: {book_title_en} ({book_title_ar})\n"
             f"Author: {author}\n"
             f"Section: {section_idx}\n\n"
-            f"Arabic Text:\n\"\"\"\n{passage_text}\n\"\"\""
+            f"Arabic Text ({len(passage_text)} chars):\n\"\"\"\n{passage_text}\n\"\"\""
         )
 
         output = None
         if provider != "rag_standalone" and effective_key:
             try:
-                output = self.call_translation_api(system_prompt, user_prompt, api_key=effective_key, base_url=effective_base, model=effective_model, provider=provider)
+                output = self.call_translation_api(system_prompt, user_prompt, max_tokens=8192, api_key=effective_key, base_url=effective_base, model=effective_model, provider=provider)
             except Exception as e:
                 print(f"[AynStudio] Cloud API call notice: {e}. Falling back to authentic AynEngine Quad-Lexical Active-RAG.")
                 output = None
 
         if not output:
             root_keys = list(session_lexicon.keys())[:4]
-            anchors_summary = "\n".join([f"- Root {r}: {session_lexicon[r].get('lisan', '')[:80]}" for r in root_keys]) if root_keys else "- Classical Kalam / Fiqh roots retrieved"
+            anchors_summary = "\n".join([f"- Root {r}: {session_lexicon[r].get('lisan_semantics', '')[:80]}" for r in root_keys]) if root_keys else "- Classical Kalam / Fiqh roots retrieved"
             return {
                 "index": section_idx,
                 "title_ar": f"المقطع {section_idx}",
@@ -767,6 +819,31 @@ class AynTranslationStudio:
             a_match = re.search(r'QUAD_ANCHORS:\s*([\s\S]*?)$', header)
             if a_match:
                 anchors_block = a_match.group(1).strip()
+
+        # Update used roots tracking
+        root_matches = re.findall(r'-\s*Root:\s*([\u0600-\u06FF\w]+)', anchors_block)
+        for r in root_matches:
+            self.used_roots.add(self.normalize_root(r))
+
+        # Completeness verification: Check that translation ends on a valid sentence terminus
+        tr_stripped = translation_text.strip()
+        valid_endings = ('.', '!', '?', '"', '»', '}', ')', '”', '’')
+        if tr_stripped and not tr_stripped.endswith(valid_endings):
+            print(f"[AynStudio Zero-Loss Validator] Detected unclosed sentence in section {section_idx}. Requesting completion...")
+            try:
+                continuation = self.call_translation_api(
+                    system_prompt="You are a translation stitcher. Complete the final trailing sentence cleanly.",
+                    user_prompt=f"The following translation ended abruptly:\n\"\"\"{tr_stripped[-300:]}\"\"\"\n\nOriginal Arabic:\n\"\"\"{passage_text[-500:]}\"\"\"\n\nProvide ONLY the clean concluding words to complete the sentence properly:",
+                    max_tokens=512,
+                    api_key=effective_key,
+                    base_url=effective_base,
+                    model=effective_model,
+                    provider=provider
+                )
+                if continuation and not continuation.startswith("["):
+                    translation_text += " " + continuation.strip()
+            except Exception as e:
+                print(f"[AynStudio] Continuation stitcher note: {e}")
 
         return {
             "index": section_idx,

@@ -357,16 +357,12 @@ def get_available_voices():
 @app.head("/api/download/apk")
 def download_android_apk():
     """Serves the compiled RaziApp Android APK package."""
-    candidates = [
-        BASE_DIR / "raziapp-v2.3.8.apk",
-        BASE_DIR / "raziapp-v2.3.7.apk",
-        BASE_DIR / "public" / "raziapp-v2.3.8.apk",
-        BASE_DIR / "public" / "raziapp-v2.3.7.apk",
-        BASE_DIR / "public" / "raziapp.apk",
+    # Dynamic resolution of newest versioned APK
+    versioned_apks = sorted(list(BASE_DIR.glob("raziapp-v*.apk")), key=lambda p: p.stat().st_mtime, reverse=True)
+    candidates = versioned_apks + [
         BASE_DIR / "raziapp.apk",
-        BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk",
         BASE_DIR / "public" / "raziapp.apk",
-        BASE_DIR / "raziapp-v2.3.0.apk",
+        BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk",
         BASE_DIR / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
     ]
     apk_path = next((p for p in candidates if p.exists()), None)
@@ -374,7 +370,7 @@ def download_android_apk():
         raise HTTPException(status_code=404, detail="APK binary not found.")
     return FileResponse(
         path=str(apk_path),
-        filename="raziapp-v2.3.8.apk",
+        filename=apk_path.name,
         media_type="application/vnd.android.package-archive"
     )
 
@@ -456,7 +452,7 @@ def translate_single_chunk(req: ChunkTranslationRequest):
             session_lexicon=session_lexicon,
             api_key=req.api_key,
             provider=req.provider,
-            base_url=req.base_url,
+            base_url=(req.base_url[:-len("/chat/completions")].rstrip("/") if req.base_url and req.base_url.endswith("/chat/completions") else req.base_url),
             model=req.model
         )
         return {
@@ -485,7 +481,7 @@ def start_translation(req: TranslationStartRequest):
             max_chunks=req.max_chunks,
             api_key=req.api_key,
             provider=req.provider,
-            base_url=req.base_url,
+            base_url=(req.base_url[:-len("/chat/completions")].rstrip("/") if req.base_url and req.base_url.endswith("/chat/completions") else req.base_url),
             model=req.model
         )
         return {"success": True, "job_id": job_id, "status": "queued"}
