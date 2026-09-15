@@ -83,6 +83,9 @@ class TranslationStartRequest(BaseModel):
     include_rag_glossary: bool = True
     max_chunks: Optional[int] = None
     api_key: Optional[str] = None
+    provider: Optional[str] = "deepseek"
+    base_url: Optional[str] = None
+    model: Optional[str] = None
 
 class ChunkTranslationRequest(BaseModel):
     text: str
@@ -91,6 +94,9 @@ class ChunkTranslationRequest(BaseModel):
     book_title_en: Optional[str] = "Classical Treatise"
     target_lang: Optional[str] = "en"
     api_key: Optional[str] = None
+    provider: Optional[str] = "deepseek"
+    base_url: Optional[str] = None
+    model: Optional[str] = None
 
 class UploadFileRequest(BaseModel):
     filename: str
@@ -352,7 +358,9 @@ def get_available_voices():
 def download_android_apk():
     """Serves the compiled RaziApp Android APK package."""
     candidates = [
+        BASE_DIR / "raziapp-v2.3.8.apk",
         BASE_DIR / "raziapp-v2.3.7.apk",
+        BASE_DIR / "public" / "raziapp-v2.3.8.apk",
         BASE_DIR / "public" / "raziapp-v2.3.7.apk",
         BASE_DIR / "public" / "raziapp.apk",
         BASE_DIR / "raziapp.apk",
@@ -366,7 +374,7 @@ def download_android_apk():
         raise HTTPException(status_code=404, detail="APK binary not found.")
     return FileResponse(
         path=str(apk_path),
-        filename="raziapp-v2.3.7.apk",
+        filename="raziapp-v2.3.8.apk",
         media_type="application/vnd.android.package-archive"
     )
 
@@ -435,7 +443,7 @@ def upload_manuscript_file(req: UploadFileRequest):
 
 @app.post("/api/translation/translate_chunk")
 def translate_single_chunk(req: ChunkTranslationRequest):
-    """Translates a single passage using authentic local AynEngine Active-RAG + DeepSeek."""
+    """Translates a single passage using authentic local AynEngine Active-RAG + Selected Provider."""
     try:
         session_lexicon = {}
         res = translation_studio.translate_passage(
@@ -446,7 +454,10 @@ def translate_single_chunk(req: ChunkTranslationRequest):
             section_idx=1,
             target_lang=req.target_lang,
             session_lexicon=session_lexicon,
-            api_key=req.api_key
+            api_key=req.api_key,
+            provider=req.provider,
+            base_url=req.base_url,
+            model=req.model
         )
         return {
             "success": True,
@@ -471,7 +482,11 @@ def start_translation(req: TranslationStartRequest):
             target_lang=req.target_lang,
             edition_mode=req.edition_mode,
             include_rag_glossary=req.include_rag_glossary,
-            max_chunks=req.max_chunks
+            max_chunks=req.max_chunks,
+            api_key=req.api_key,
+            provider=req.provider,
+            base_url=req.base_url,
+            model=req.model
         )
         return {"success": True, "job_id": job_id, "status": "queued"}
     except Exception as e:

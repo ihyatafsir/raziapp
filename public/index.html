@@ -631,10 +631,31 @@
               <div class="studio-field">
                 <label class="studio-label">AI Engine Provider:</label>
                 <select class="studio-select" id="studio-ai-engine">
-                  <option value="deepseek">DeepSeek Flash v4.1 (Cloud Engine)</option>
+                  <option value="deepseek">DeepSeek AI (Chat / Reasoner)</option>
+                  <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+                  <option value="gemini">Google Gemini (Gemini 2.0 / 1.5)</option>
+                  <option value="openrouter">OpenRouter (Claude 3.5 / Llama 3.3 / Qwen)</option>
+                  <option value="groq">Groq (Ultra-Fast LPU Inference)</option>
+                  <option value="custom">Custom / Local Ollama (vLLM / LM Studio)</option>
                   <option value="rag_standalone">Standalone Quad-Lexical RAG (100% Offline)</option>
                 </select>
               </div>
+              <div class="studio-field" id="studio-model-container">
+                <label class="studio-label">Model:</label>
+                <select class="studio-select" id="studio-ai-model">
+                  <option value="deepseek-chat">DeepSeek Chat (V3 / Flash)</option>
+                  <option value="deepseek-reasoner">DeepSeek Reasoner (R1)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Custom Endpoint URL for Local Ollama / Custom Server -->
+            <div class="studio-field" id="studio-custom-endpoint-container" style="display: none; margin-top: 0.35rem;">
+              <label class="studio-label">Custom API Base URL / Endpoint:</label>
+              <input type="text" class="search-input" id="studio-custom-endpoint-input" placeholder="http://localhost:11434/v1/chat/completions" value="http://localhost:11434/v1/chat/completions" style="font-family: monospace; font-size: 0.8rem; padding: 0.45rem 0.75rem;">
+            </div>
+
+            <div class="studio-config-row" style="margin-top: 0.35rem;">
               <div class="studio-field">
                 <label class="studio-label">Scope / Quick Test:</label>
                 <select class="studio-select" id="studio-chunk-limit">
@@ -647,12 +668,12 @@
 
             <div class="studio-field" id="studio-api-key-container" style="margin-top: 0.35rem;">
               <label class="studio-label" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>DeepSeek API Key:</span>
-                <span id="api-key-status-badge" style="color: var(--brand-gold); font-weight: 600; text-transform: none; font-size: 0.72rem;">No Key (Required for DeepSeek v4.1)</span>
+                <span id="studio-api-key-label">DeepSeek API Key:</span>
+                <span id="api-key-status-badge" style="color: var(--brand-gold); font-weight: 600; text-transform: none; font-size: 0.72rem;">No Key (Required for DeepSeek)</span>
               </label>
               <input type="password" class="search-input" id="studio-api-key-input" placeholder="Paste your DeepSeek API Key (sk-...)" style="font-family: monospace; font-size: 0.8rem; padding: 0.45rem 0.75rem;">
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
-                Please paste your personal DeepSeek API key (sk-...) to translate with DeepSeek Flash v4.1. Stored securely on your device.
+              <div id="studio-api-key-help" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                Please paste your personal DeepSeek API key (sk-...) to translate with DeepSeek. Stored securely on your device.
               </div>
             </div>
 

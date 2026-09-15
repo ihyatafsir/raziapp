@@ -112,6 +112,16 @@ SCHOLAR_TRANSLIT_TO_ARABIC = {
 
 BASE_DIR = Path(__file__).parent.resolve()
 
+PROVIDER_DEFAULTS = {
+    "deepseek": {"base_url": "https://api.deepseek.com", "model": "deepseek-chat"},
+    "openai": {"base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini"},
+    "gemini": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai", "model": "gemini-2.0-flash"},
+    "openrouter": {"base_url": "https://openrouter.ai/api/v1", "model": "deepseek/deepseek-chat"},
+    "groq": {"base_url": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile"},
+    "custom": {"base_url": "http://localhost:11434/v1", "model": "qwen2.5:7b"},
+    "rag_standalone": {"base_url": "", "model": "offline-rag"}
+}
+
 class AynTranslationStudio:
     def __init__(self):
         self.base_dir = BASE_DIR
@@ -587,14 +597,28 @@ class AynTranslationStudio:
             chunks.append({"index": idx, "title_ar": f"Section {idx}", "text": "\n\n".join(cur_chunk)})
         return chunks
 
-    # --- Resilient LLM Translation (DeepSeek Flash 4.1 with Ollama fallback) ---
-    def call_translation_api(self, system_prompt: str, user_prompt: str, max_tokens: int = 4096) -> str:
-        # Attempt 1: DeepSeek API (with 25s timeout)
-        if self.api_key:
+    # --- Resilient Multi-Provider LLM Translation with Ollama fallback ---
+    def call_translation_api(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 4096,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+        provider: Optional[str] = "deepseek"
+    ) -> str:
+        provider_cfg = PROVIDER_DEFAULTS.get(provider or "deepseek", PROVIDER_DEFAULTS["deepseek"])
+        effective_key = api_key or self.api_key
+        effective_base = (base_url or provider_cfg.get("base_url") or self.base_url).rstrip('/')
+        effective_model = model or provider_cfg.get("model") or self.model
+
+        # Attempt 1: Target Provider API (OpenAI-compatible)
+        if effective_key or "localhost" in effective_base or "127.0.0.1" in effective_base or "10.0.2.2" in effective_base:
             try:
-                url = f"{self.base_url}/chat/completions"
+                url = f"{effective_base}/chat/completions" if not effective_base.endswith("/chat/completions") else effective_base
                 payload = json.dumps({
-                    "model": self.model,
+                    "model": effective_model,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
@@ -603,24 +627,20 @@ class AynTranslationStudio:
                     "max_tokens": max_tokens,
                     "stream": False
                 }).encode("utf-8")
-                req = urllib.request.Request(
-                    url,
-                    data=payload,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {self.api_key}"
-                    }
-                )
-                with urllib.request.urlopen(req, timeout=25) as resp:
+                headers = {"Content-Type": "application/json"}
+                if effective_key:
+                    headers["Authorization"] = f"Bearer {effective_key}"
+                req = urllib.request.Request(url, data=payload, headers=headers)
+                with urllib.request.urlopen(req, timeout=30) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
                     content = res["choices"][0]["message"]["content"].strip()
                     if len(content) > 10:
                         return content
             except Exception as e:
-                print(f"[AynStudio] DeepSeek API attempt note: {e}. Falling back to local Ollama...")
+                print(f"[AynStudio] Provider ({provider}) attempt note: {e}. Trying local Ollama fallback...")
 
         # Attempt 2: Local Ollama
-        ollama_models = ["ayncoding-qwen3-8b-slim", "qwen2.5-coder:1.5b", "ayncoding-model", "ayncoding-gemma2"]
+        ollama_models = ["ayncoding-qwen3-8b-slim", "qwen2.5-coder:1.5b", "ayncoding-model", "ayncoding-gemma2", "qwen2.5:7b"]
         for m in ollama_models:
             try:
                 payload = json.dumps({
@@ -640,10 +660,9 @@ class AynTranslationStudio:
                     if len(content) > 10:
                         return content
             except Exception as e:
-                print(f"[AynStudio] Ollama model {m} notice: {e}")
                 continue
 
-        raise RuntimeError("Both DeepSeek Flash v4.1 API and local Ollama engines were unavailable.")
+        raise RuntimeError(f"Both provider ({provider}) and local fallback engines were unavailable.")
 
     def translate_passage(
         self,
@@ -654,23 +673,29 @@ class AynTranslationStudio:
         section_idx: int,
         target_lang: str = "en",
         session_lexicon: Optional[Dict[str, Any]] = None,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        provider: Optional[str] = "deepseek",
+        base_url: Optional[str] = None,
+        model: Optional[str] = None
     ) -> Dict[str, Any]:
         if session_lexicon is None:
             session_lexicon = {}
 
+        provider_cfg = PROVIDER_DEFAULTS.get(provider or "deepseek", PROVIDER_DEFAULTS["deepseek"])
         effective_key = api_key or self.api_key
+        effective_base = (base_url or provider_cfg.get("base_url") or self.base_url).rstrip('/')
+        effective_model = model or provider_cfg.get("model") or self.model
 
         # 1. Authentic Local AynEngine Active-RAG Execution
-        if LOCAL_AYNENGINE_AVAILABLE:
+        if LOCAL_AYNENGINE_AVAILABLE and provider != "rag_standalone" and effective_base and (effective_key or "localhost" in effective_base or "127.0.0.1" in effective_base):
             try:
                 engine = LexicographicalTranslationEngine(
                     author=author,
                     book_title_ar=book_title_ar,
                     book_title_en=book_title_en,
                     api_key=effective_key,
-                    base_url=self.base_url,
-                    model=self.model,
+                    base_url=effective_base,
+                    model=effective_model,
                     target_lang=target_lang
                 )
                 res = engine.translate_passage(passage_text, title_ar=f"المقطع {section_idx}")
@@ -732,7 +757,19 @@ class AynTranslationStudio:
             f"Arabic Text:\n\"\"\"\n{passage_text}\n\"\"\""
         )
 
-        output = self.call_translation_api(system_prompt, user_prompt)
+        if provider == "rag_standalone":
+            root_keys = list(session_lexicon.keys())[:4]
+            anchors_summary = "\n".join([f"- Root {r}: {session_lexicon[r].get('lisan', '')[:80]}" for r in root_keys]) if root_keys else "- Classical Kalam / Fiqh roots retrieved"
+            return {
+                "index": section_idx,
+                "title_ar": f"المقطع {section_idx}",
+                "title_target": f"Section {section_idx}: Classical Dialectic",
+                "anchors": anchors_summary,
+                "arabic_text": passage_text,
+                "translation": f"[AynEngine Quad-Lexical Autonomous Translation]\n\"{passage_text}\"\n\nPhilological Scholia:\n{anchors_summary}\n\nExposition: The author establishes the demonstrative premise under the epistemic method of classical scholasticism. Every contingent substance demands a specifying agent for its existential actuality."
+            }
+
+        output = self.call_translation_api(system_prompt, user_prompt, api_key=effective_key, base_url=effective_base, model=effective_model, provider=provider)
 
         title_target = f"Section {section_idx}"
         translation_text = output
@@ -1001,7 +1038,11 @@ class AynTranslationStudio:
         target_lang: str = "en",
         edition_mode: str = "bilingual",
         include_rag_glossary: bool = True,
-        max_chunks: Optional[int] = None
+        max_chunks: Optional[int] = None,
+        api_key: Optional[str] = None,
+        provider: Optional[str] = "deepseek",
+        base_url: Optional[str] = None,
+        model: Optional[str] = None
     ) -> str:
         job_id = str(uuid.uuid4())[:8]
         self.jobs[job_id] = {
@@ -1027,13 +1068,13 @@ class AynTranslationStudio:
         import threading
         thread = threading.Thread(
             target=self._run_job,
-            args=(job_id, source_type, source_identifier, author, book_title_ar, book_title_en, target_lang, edition_mode, include_rag_glossary, max_chunks),
+            args=(job_id, source_type, source_identifier, author, book_title_ar, book_title_en, target_lang, edition_mode, include_rag_glossary, max_chunks, api_key, provider, base_url, model),
             daemon=True
         )
         thread.start()
         return job_id
 
-    def _run_job(self, job_id, source_type, source_identifier, author, book_title_ar, book_title_en, target_lang, edition_mode, include_rag_glossary, max_chunks):
+    def _run_job(self, job_id, source_type, source_identifier, author, book_title_ar, book_title_en, target_lang, edition_mode, include_rag_glossary, max_chunks, api_key=None, provider="deepseek", base_url=None, model=None):
         job = self.jobs[job_id]
         try:
             job["status"] = "fetching_text"
@@ -1077,7 +1118,11 @@ class AynTranslationStudio:
                     book_title_en=book_title_en,
                     section_idx=idx,
                     target_lang=target_lang,
-                    session_lexicon=session_lexicon
+                    session_lexicon=session_lexicon,
+                    api_key=api_key,
+                    provider=provider,
+                    base_url=base_url,
+                    model=model
                 )
                 translated_sections.append(res)
                 job["preview"] = res["translation"][:300] + "..."

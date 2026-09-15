@@ -201,24 +201,42 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun executeDeepSeekCall(systemPrompt: String, userPrompt: String, apiKey: String, model: String): String {
+            return executeLlmCall(systemPrompt, userPrompt, apiKey, model, "https://api.deepseek.com/chat/completions")
+        }
+
+        @JavascriptInterface
+        fun executeLlmCall(systemPrompt: String, userPrompt: String, apiKey: String, model: String, endpointUrl: String): String {
             val callThread = java.util.concurrent.Executors.newSingleThreadExecutor()
             val future = callThread.submit(java.util.concurrent.Callable<String> {
                 try {
                     val activeKey = apiKey.trim()
-                    if (activeKey.isBlank()) {
+                    val targetUrl = if (endpointUrl.isNotBlank()) endpointUrl.trim() else "https://api.deepseek.com/chat/completions"
+                    val isLocalOllama = targetUrl.contains("localhost") || targetUrl.contains("127.0.0.1") || targetUrl.contains("10.0.2.2")
+
+                    if (!isLocalOllama && activeKey.isBlank()) {
                         return@Callable org.json.JSONObject().apply {
                             put("success", false)
-                            put("error", "No DeepSeek API key provided")
+                            put("error", "API key required for selected provider")
                         }.toString()
                     }
+
                     val activeModel = if (model.isNotBlank()) model.trim() else "deepseek-chat"
-                    val url = java.net.URL("https://api.deepseek.com/chat/completions")
+                    // Handle Android emulator localhost routing: localhost -> 10.0.2.2
+                    val resolvedUrl = if (targetUrl.contains("localhost") || targetUrl.contains("127.0.0.1")) {
+                        targetUrl.replace("localhost", "10.0.2.2").replace("127.0.0.1", "10.0.2.2")
+                    } else {
+                        targetUrl
+                    }
+
+                    val url = java.net.URL(resolvedUrl)
                     val conn = url.openConnection() as java.net.HttpURLConnection
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                    conn.setRequestProperty("Authorization", "Bearer $activeKey")
+                    if (activeKey.isNotBlank()) {
+                        conn.setRequestProperty("Authorization", "Bearer $activeKey")
+                    }
                     conn.connectTimeout = 15000
-                    conn.readTimeout = 40000
+                    conn.readTimeout = 60000
                     conn.doOutput = true
 
                     val jsonBody = org.json.JSONObject().apply {
@@ -260,7 +278,7 @@ class MainActivity : AppCompatActivity() {
                         }.toString()
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Native DeepSeek call failed: ${e.message}", e)
+                    Log.e(TAG, "Native LLM call failed: ${e.message}", e)
                     org.json.JSONObject().apply {
                         put("success", false)
                         put("error", e.message ?: "Connection error")
@@ -269,7 +287,7 @@ class MainActivity : AppCompatActivity() {
             })
 
             return try {
-                future.get(45, java.util.concurrent.TimeUnit.SECONDS)
+                future.get(65, java.util.concurrent.TimeUnit.SECONDS)
             } catch (e: Exception) {
                 org.json.JSONObject().apply {
                     put("success", false)

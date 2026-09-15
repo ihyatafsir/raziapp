@@ -251,6 +251,9 @@ function initTypographyEngine() {
       state.fontFamily = font;
       localStorage.setItem('raziapp_font_family', font);
       updateTypographyStyles();
+      if (state.isEpubMode) {
+        buildEpubPages(state.currentEpubPageIndex);
+      }
     });
   });
 
@@ -265,6 +268,9 @@ function initTypographyEngine() {
       state.lineSpacing = spacing;
       localStorage.setItem('raziapp_line_spacing', spacing);
       updateTypographyStyles();
+      if (state.isEpubMode) {
+        buildEpubPages(state.currentEpubPageIndex);
+      }
     });
   });
 
@@ -287,6 +293,9 @@ function adjustFontSize(delta) {
   state.fontSizeRem = Math.round(newSize * 10) / 10;
   localStorage.setItem('raziapp_fontsize', state.fontSizeRem.toString());
   updateTypographyStyles();
+  if (state.isEpubMode) {
+    buildEpubPages(state.currentEpubPageIndex);
+  }
 }
 
 function updateTypographyStyles() {
@@ -876,6 +885,57 @@ function toggleEpubHud() {
   }
 }
 
+/**
+ * Splits classical paragraphs cleanly at sentence boundaries to eliminate
+ * text truncation and cut-off lines across paginated e-reader slides.
+ */
+function splitParagraphIntoCleanChunks(text, maxChunkLen = 420) {
+  if (!text || text.length <= maxChunkLen) return [text];
+
+  // Regex splitting on sentence boundaries (. ! ? ؟ ؛ \n) preserving punctuation
+  const sentenceRegex = /([^\.!?؟؛\n]+[\.!?؟؛\n]+(?:\s+|$)|[^\.!?؟؛\n]+$)/g;
+  const matches = text.match(sentenceRegex);
+  const sentences = matches && matches.length > 0 ? matches : [text];
+
+  const chunks = [];
+  let current = '';
+
+  for (const s of sentences) {
+    if ((current + s).length > maxChunkLen && current.trim().length > 0) {
+      chunks.push(current.trim());
+      current = s;
+    } else {
+      current += s;
+    }
+  }
+  if (current && current.trim()) {
+    chunks.push(current.trim());
+  }
+
+  // Handle sentences that exceed maxChunkLen (split at clause or word boundaries)
+  const finalChunks = [];
+  for (const c of chunks) {
+    if (c.length <= maxChunkLen * 1.3) {
+      finalChunks.push(c);
+    } else {
+      const words = c.split(' ');
+      let wordBuf = '';
+      for (const w of words) {
+        if ((wordBuf + ' ' + w).length > maxChunkLen && wordBuf.trim().length > 0) {
+          finalChunks.push(wordBuf.trim());
+          wordBuf = w;
+        } else {
+          wordBuf = wordBuf ? (wordBuf + ' ' + w) : w;
+        }
+      }
+      if (wordBuf && wordBuf.trim()) {
+        finalChunks.push(wordBuf.trim());
+      }
+    }
+  }
+  return finalChunks.length > 0 ? finalChunks : [text];
+}
+
 function buildEpubPages(targetPageIndex = 0) {
   const track = document.getElementById('epub-pages-track');
   if (!track || !state.chapterData) return;
@@ -888,28 +948,89 @@ function buildEpubPages(targetPageIndex = 0) {
     return;
   }
 
-  // Dynamic Pagination: Group paragraphs into pages (~500–750 chars per page slide)
+  // Dynamic capacity budgeting based on current typography scale
+  const fontScale = (state.fontSizeRem || 1.1) / 1.1;
+  const spacingScale = parseFloat(state.lineSpacing || '1.85') / 1.85;
+  const typoScale = Math.max(0.7, fontScale * spacingScale);
+
+  // Standard budgets per slide (ensures comfortable clearance above bottom HUD)
+  const enBudget = Math.max(250, Math.floor(440 / typoScale));
+  const arBudget = Math.max(120, Math.floor(180 / typoScale));
+  const headingWeight = Math.floor(130 / typoScale);
+
+  // 1. Deconstruct and split long paragraphs into discrete items
+  const preparedItems = [];
+
+  paragraphs.forEach((p, origIdx) => {
+    const isArabic = p.is_arabic || Boolean(p.arabic);
+    const rawText = isArabic ? (p.arabic || p.text || '') : (p.text || '');
+
+    if (isArabic) {
+      if (rawText.length > arBudget) {
+        const arChunks = splitParagraphIntoCleanChunks(rawText, arBudget);
+        arChunks.forEach((chunk, cIdx) => {
+          preparedItems.push({
+            ...p,
+            arabic: chunk,
+            text: chunk,
+            is_arabic: true,
+            isContinuation: cIdx > 0,
+            weight: Math.round(chunk.length * (enBudget / arBudget)),
+            originalIndex: origIdx
+          });
+        });
+      } else {
+        preparedItems.push({
+          ...p,
+          is_arabic: true,
+          isContinuation: false,
+          weight: Math.round(rawText.length * (enBudget / arBudget)),
+          originalIndex: origIdx
+        });
+      }
+    } else {
+      if (rawText.length > enBudget) {
+        const enChunks = splitParagraphIntoCleanChunks(rawText, enBudget);
+        enChunks.forEach((chunk, cIdx) => {
+          preparedItems.push({
+            ...p,
+            text: chunk,
+            isContinuation: cIdx > 0,
+            weight: chunk.length + (cIdx === 0 ? 25 : 5),
+            originalIndex: origIdx
+          });
+        });
+      } else {
+        const badgeWeight = (p.dialectic_type && p.dialectic_type !== 'exposition') ? 35 : 0;
+        preparedItems.push({
+          ...p,
+          isContinuation: false,
+          weight: rawText.length + 20 + badgeWeight,
+          originalIndex: origIdx
+        });
+      }
+    }
+  });
+
+  // 2. Group items into pages respecting per-slide capacity
   const pages = [];
   let currentPageItems = [];
   let currentChars = 0;
 
   const chapterHeading = state.chapterData.title || 'Section';
 
-  paragraphs.forEach((p, idx) => {
-    const textLen = (p.text || '').length;
-    
-    // Page break threshold
-    if (currentPageItems.length > 0 && (currentChars + textLen > 650 || (p.is_arabic && currentChars > 250))) {
+  preparedItems.forEach((item) => {
+    const isFirstPage = pages.length === 0;
+    const pageCapacity = isFirstPage ? Math.max(180, enBudget - headingWeight) : enBudget;
+
+    if (currentPageItems.length > 0 && (currentChars + item.weight > pageCapacity)) {
       pages.push(currentPageItems);
       currentPageItems = [];
       currentChars = 0;
     }
 
-    currentPageItems.push({
-      ...p,
-      originalIndex: idx
-    });
-    currentChars += textLen;
+    currentPageItems.push(item);
+    currentChars += item.weight;
   });
 
   if (currentPageItems.length > 0) {
@@ -919,7 +1040,7 @@ function buildEpubPages(targetPageIndex = 0) {
   state.epubPages = pages;
   const totalPages = Math.max(1, pages.length);
 
-  // Render Page Slides
+  // 3. Render Page Slides
   track.innerHTML = pages.map((pageGroup, pageIdx) => {
     return `
       <div class="epub-page-slide font-${state.fontFamily}" id="epub-slide-${pageIdx}">
@@ -937,14 +1058,17 @@ function buildEpubPages(targetPageIndex = 0) {
             `;
           }
 
+          const continuationClass = item.isContinuation ? ' page-paragraph-continuation' : '';
+          const showBadge = !item.isContinuation && dialecticType !== 'exposition';
+
           return `
             <div class="page-item-block">
-              ${dialecticType !== 'exposition' ? `
+              ${showBadge ? `
                 <div class="page-badge ${dialecticType}">
                   <span>${tagLabel}</span>
                 </div>
               ` : ''}
-              <p class="page-paragraph">${escapeHtml(item.text)}</p>
+              <p class="page-paragraph${continuationClass}">${escapeHtml(item.text)}</p>
             </div>
           `;
         }).join('')}
@@ -2209,24 +2333,199 @@ let embeddedCorpusCache = null;
 let embeddedTextsCache = null;
 let ragLookupCache = null;
 
-// Zero preconfigured key - users paste their own personal DeepSeek API key (sk-...)
-const DEFAULT_DEEPSEEK_KEY = '';
+const AI_PROVIDERS = {
+  deepseek: {
+    id: 'deepseek',
+    name: 'DeepSeek AI',
+    defaultModel: 'deepseek-chat',
+    models: [
+      { id: 'deepseek-chat', name: 'DeepSeek Chat (V3 / Flash)' },
+      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (R1)' }
+    ],
+    endpoint: 'https://api.deepseek.com/chat/completions',
+    keyPrefix: 'sk-',
+    keyPlaceholder: 'Paste your DeepSeek API Key (sk-...)',
+    keyLabel: 'DeepSeek API Key',
+    helpText: 'Requires personal DeepSeek API key. Fast, cost-effective, and scholarly.',
+    needsKey: true
+  },
+  openai: {
+    id: 'openai',
+    name: 'OpenAI',
+    defaultModel: 'gpt-4o-mini',
+    models: [
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast & Scholarly)' },
+      { id: 'gpt-4o', name: 'GPT-4o (Flagship Scholarly)' },
+      { id: 'o3-mini', name: 'o3-mini (High Reasoning)' }
+    ],
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    keyPrefix: 'sk-',
+    keyPlaceholder: 'Paste your OpenAI API Key (sk-...)',
+    keyLabel: 'OpenAI API Key',
+    helpText: 'Requires personal OpenAI API key (sk-...).',
+    needsKey: true
+  },
+  gemini: {
+    id: 'gemini',
+    name: 'Google Gemini',
+    defaultModel: 'gemini-2.0-flash',
+    models: [
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Fast & Capable)' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Deep Context)' }
+    ],
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+    keyPrefix: 'AIza',
+    keyPlaceholder: 'Paste your Google Gemini API Key (AIza...)',
+    keyLabel: 'Google Gemini API Key',
+    helpText: 'Get a free API key from Google AI Studio (aistudio.google.com).',
+    needsKey: true
+  },
+  openrouter: {
+    id: 'openrouter',
+    name: 'OpenRouter (Claude, Llama, Qwen)',
+    defaultModel: 'anthropic/claude-3.5-sonnet',
+    models: [
+      { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+      { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3' },
+      { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct' },
+      { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B Instruct' }
+    ],
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    keyPrefix: 'sk-or-',
+    keyPlaceholder: 'Paste your OpenRouter API Key (sk-or-...)',
+    keyLabel: 'OpenRouter API Key',
+    helpText: 'Access Claude 3.5, DeepSeek, and open models via OpenRouter.',
+    needsKey: true
+  },
+  groq: {
+    id: 'groq',
+    name: 'Groq (Ultra-Fast LPUs)',
+    defaultModel: 'llama-3.3-70b-versatile',
+    models: [
+      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile' },
+      { id: 'qwen-2.5-32b', name: 'Qwen 2.5 32B' },
+      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' }
+    ],
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    keyPrefix: 'gsk_',
+    keyPlaceholder: 'Paste your Groq API Key (gsk_...)',
+    keyLabel: 'Groq API Key',
+    helpText: 'Ultra-fast inference on Groq LPUs.',
+    needsKey: true
+  },
+  custom: {
+    id: 'custom',
+    name: 'Custom / Local Ollama (vLLM / LM Studio)',
+    defaultModel: 'qwen2.5:7b',
+    models: [
+      { id: 'qwen2.5:7b', name: 'Qwen 2.5 (Local)' },
+      { id: 'llama3.2', name: 'Llama 3.2 (Local)' },
+      { id: 'custom', name: 'Custom Model Name' }
+    ],
+    endpoint: 'http://localhost:11434/v1/chat/completions',
+    keyPrefix: '',
+    keyPlaceholder: 'Optional API Key (or empty for local Ollama)',
+    keyLabel: 'API Key (Optional)',
+    helpText: 'Connect to local Ollama, vLLM, LM Studio, or custom proxy.',
+    needsKey: false,
+    hasCustomEndpoint: true
+  },
+  rag_standalone: {
+    id: 'rag_standalone',
+    name: 'Standalone Quad-Lexical RAG (100% Offline)',
+    defaultModel: 'offline-rag',
+    models: [
+      { id: 'offline-rag', name: 'Autonomous Quad-Lexical Synthesis' }
+    ],
+    endpoint: '',
+    keyPrefix: '',
+    keyPlaceholder: '',
+    keyLabel: '',
+    helpText: 'Uses embedded 4,054 roots and Sibawayh grammatical canons without any internet connection.',
+    needsKey: false
+  }
+};
 
-function getActiveDeepSeekKey() {
-  const saved = localStorage.getItem('raziapp_deepseek_key');
-  if (saved && saved.trim()) return saved.trim();
-  return '';
+function getProviderStorageKey(providerId) {
+  return `raziapp_key_${providerId}`;
 }
 
-function updateStudioApiKeyBadge(key) {
+function getActiveProviderKey(providerId) {
+  const p = AI_PROVIDERS[providerId] || AI_PROVIDERS.deepseek;
+  if (!p.needsKey) return '';
+  if (providerId === 'deepseek') {
+    return localStorage.getItem('raziapp_key_deepseek') || localStorage.getItem('raziapp_deepseek_key') || '';
+  }
+  return localStorage.getItem(getProviderStorageKey(providerId)) || '';
+}
+
+function updateStudioApiKeyBadge(providerId, key) {
   const badge = document.getElementById('api-key-status-badge');
   if (!badge) return;
+  const p = AI_PROVIDERS[providerId] || AI_PROVIDERS.deepseek;
+
+  if (!p.needsKey) {
+    badge.textContent = 'Offline / Local (No Key Required)';
+    badge.style.color = 'var(--brand-emerald)';
+    return;
+  }
+
   if (key && key.trim()) {
     badge.textContent = 'Active Key Configured';
     badge.style.color = 'var(--brand-emerald)';
   } else {
-    badge.textContent = 'No Key (Required for DeepSeek v4.1)';
+    badge.textContent = `No Key (Required for ${p.name})`;
     badge.style.color = 'var(--brand-gold)';
+  }
+}
+
+function syncStudioProviderUI(providerId) {
+  const p = AI_PROVIDERS[providerId] || AI_PROVIDERS.deepseek;
+
+  // 1. Populate model dropdown
+  const modelSelect = document.getElementById('studio-ai-model');
+  const modelContainer = document.getElementById('studio-model-container');
+  if (modelSelect && modelContainer) {
+    if (providerId === 'rag_standalone') {
+      modelContainer.style.display = 'none';
+    } else {
+      modelContainer.style.display = 'flex';
+      const savedModel = localStorage.getItem(`raziapp_model_${providerId}`) || p.defaultModel;
+      modelSelect.innerHTML = p.models.map(m => `<option value="${m.id}" ${m.id === savedModel ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
+    }
+  }
+
+  // 2. Custom endpoint container
+  const customContainer = document.getElementById('studio-custom-endpoint-container');
+  const customInput = document.getElementById('studio-custom-endpoint-input');
+  if (customContainer) {
+    customContainer.style.display = p.hasCustomEndpoint ? 'flex' : 'none';
+    if (p.hasCustomEndpoint && customInput) {
+      customInput.value = localStorage.getItem('raziapp_custom_endpoint') || p.endpoint;
+    }
+  }
+
+  // 3. API Key container visibility & labels
+  const keyContainer = document.getElementById('studio-api-key-container');
+  const keyLabel = document.getElementById('studio-api-key-label');
+  const keyInput = document.getElementById('studio-api-key-input');
+  const keyHelp = document.getElementById('studio-api-key-help');
+
+  if (keyContainer) {
+    if (providerId === 'rag_standalone') {
+      keyContainer.style.display = 'none';
+    } else {
+      keyContainer.style.display = 'flex';
+      if (keyLabel) keyLabel.textContent = `${p.keyLabel}:`;
+      if (keyInput) {
+        keyInput.placeholder = p.keyPlaceholder;
+        const curKey = getActiveProviderKey(providerId);
+        keyInput.value = curKey;
+        updateStudioApiKeyBadge(providerId, curKey);
+      }
+      if (keyHelp) keyHelp.textContent = p.helpText;
+    }
   }
 }
 
@@ -2274,13 +2573,13 @@ function openTranslationStudio() {
     updateBackdrop();
   }
 
-  // Pre-populate API key field and update status badge
-  const keyInput = document.getElementById('studio-api-key-input');
-  if (keyInput) {
-    const curKey = localStorage.getItem('raziapp_deepseek_key') || '';
-    keyInput.value = curKey;
-    updateStudioApiKeyBadge(curKey);
+  // Sync active AI Provider UI and pre-populate keys
+  const savedProvider = localStorage.getItem('raziapp_active_provider') || 'deepseek';
+  const providerSelect = document.getElementById('studio-ai-engine');
+  if (providerSelect) {
+    providerSelect.value = savedProvider;
   }
+  syncStudioProviderUI(savedProvider);
 
   const openitiList = document.getElementById('openiti-results-list');
   if (openitiList && (!openitiList.children || openitiList.children.length === 0)) {
@@ -2980,18 +3279,43 @@ function initTranslationStudio() {
   document.getElementById('btn-close-translation-studio')?.addEventListener('click', closeTranslationStudio);
   document.getElementById('btn-studio-cancel')?.addEventListener('click', closeTranslationStudio);
 
+  // Provider selector change listener
+  const providerSelect = document.getElementById('studio-ai-engine');
+  providerSelect?.addEventListener('change', (e) => {
+    const pId = e.target.value;
+    localStorage.setItem('raziapp_active_provider', pId);
+    syncStudioProviderUI(pId);
+  });
+
+  // Model selector change listener
+  const modelSelect = document.getElementById('studio-ai-model');
+  modelSelect?.addEventListener('change', (e) => {
+    const pId = document.getElementById('studio-ai-engine')?.value || 'deepseek';
+    localStorage.setItem(`raziapp_model_${pId}`, e.target.value);
+  });
+
+  // Custom endpoint change listener
+  const customEndpointInput = document.getElementById('studio-custom-endpoint-input');
+  customEndpointInput?.addEventListener('input', (e) => {
+    localStorage.setItem('raziapp_custom_endpoint', e.target.value.trim());
+  });
+
   // API Key input change listener
   const keyInput = document.getElementById('studio-api-key-input');
   keyInput?.addEventListener('input', (e) => {
     const val = e.target.value.trim();
+    const pId = document.getElementById('studio-ai-engine')?.value || 'deepseek';
+    const storageKey = getProviderStorageKey(pId);
     if (val) {
-      localStorage.setItem('raziapp_deepseek_key', val);
-      updateStudioApiKeyBadge(val);
-      showToast('DeepSeek API key saved');
+      localStorage.setItem(storageKey, val);
+      if (pId === 'deepseek') localStorage.setItem('raziapp_deepseek_key', val);
+      updateStudioApiKeyBadge(pId, val);
+      showToast(`${AI_PROVIDERS[pId]?.name || 'Provider'} key saved`);
     } else {
-      localStorage.removeItem('raziapp_deepseek_key');
-      updateStudioApiKeyBadge('');
-      showToast('DeepSeek API key cleared');
+      localStorage.removeItem(storageKey);
+      if (pId === 'deepseek') localStorage.removeItem('raziapp_deepseek_key');
+      updateStudioApiKeyBadge(pId, '');
+      showToast('API key cleared');
     }
   });
 
@@ -3167,18 +3491,18 @@ function initTranslationStudio() {
     const chunkLimit = parseInt(document.getElementById('studio-chunk-limit')?.value || '3', 10);
     const includeGlossary = document.getElementById('studio-include-glossary')?.checked ?? true;
 
-    // Enforce API key requirement for DeepSeek v4.1 (Zero hardcoded keys)
-    if (aiEngineChoice === 'deepseek') {
-      const activeKey = getActiveDeepSeekKey();
-      if (!activeKey) {
-        showToast('DeepSeek API Key Required: Please paste your API key (sk-...) above or choose Offline Synthesis.');
-        const keyInput = document.getElementById('studio-api-key-input');
-        if (keyInput) {
-          keyInput.focus();
-          keyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
+    const currentProviderCfg = AI_PROVIDERS[aiEngineChoice] || AI_PROVIDERS.deepseek;
+    const activeApiKey = getActiveProviderKey(aiEngineChoice);
+
+    // Enforce API key requirement if provider needs one
+    if (currentProviderCfg.needsKey && !activeApiKey) {
+      showToast(`${currentProviderCfg.name} Key Required: Please paste your API key above or select Offline Synthesis.`);
+      const keyInput = document.getElementById('studio-api-key-input');
+      if (keyInput) {
+        keyInput.focus();
+        keyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+      return;
     }
 
     startBtn.disabled = true;
@@ -3230,7 +3554,10 @@ function initTranslationStudio() {
       if (monitorProgress) monitorProgress.textContent = '45%';
 
       const translatedSections = [];
-      const activeApiKey = getActiveDeepSeekKey();
+      const activeModel = document.getElementById('studio-ai-model')?.value || currentProviderCfg.defaultModel;
+      const customEndpointVal = document.getElementById('studio-custom-endpoint-input')?.value?.trim();
+      const activeEndpoint = (aiEngineChoice === 'custom' && customEndpointVal) ? customEndpointVal : (currentProviderCfg.endpoint || 'https://api.deepseek.com/chat/completions');
+      const isLocalProvider = aiEngineChoice === 'custom' || activeEndpoint.includes('localhost') || activeEndpoint.includes('127.0.0.1') || activeEndpoint.includes('10.0.2.2');
       const langName = targetLang === 'sq' ? 'Albanian (Shqip)' : targetLang === 'de' ? 'German (Deutsch)' : targetLang === 'tr' ? 'Turkish (Türkçe)' : targetLang === 'fr' ? 'French' : 'English';
 
       for (let i = 0; i < sectionsToTranslate.length; i++) {
@@ -3245,9 +3572,9 @@ function initTranslationStudio() {
         const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
         const { systemPrompt, userPrompt } = ragContext;
 
-        // Attempt Translation via DeepSeek Flash 4.1 with Active-RAG
-        if (aiEngineChoice === 'deepseek' && activeApiKey) {
-          // 1. Try Local AynEngine Server endpoint (Runs authentic local LexicographicalTranslationEngine)
+        // Attempt Translation via Selected Provider with Active-RAG
+        if (aiEngineChoice !== 'rag_standalone' && (activeApiKey || isLocalProvider)) {
+          // 1. Try Local AynEngine Server endpoint (Authentic Local Active-RAG)
           try {
             const srvRes = await fetchWithTimeout(getApiUrl('/api/translation/translate_chunk'), {
               method: 'POST',
@@ -3258,7 +3585,10 @@ function initTranslationStudio() {
                 book_title_ar: studioSelectedSource?.title_ar || 'كتاب كلاسيكي',
                 book_title_en: studioSelectedSource?.title_en || 'Classical Treatise',
                 target_lang: targetLang,
-                api_key: activeApiKey
+                api_key: activeApiKey,
+                provider: aiEngineChoice,
+                base_url: activeEndpoint,
+                model: activeModel
               })
             }, 25000);
             if (srvRes.ok) {
@@ -3273,29 +3603,37 @@ function initTranslationStudio() {
           }
 
           // 2. Try Native Android Bridge (Zero CORS) with client Active-RAG context
-          if (!translatedText && window.AndroidBridge && typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
+          if (!translatedText && window.AndroidBridge) {
             try {
-              const resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, 'deepseek-chat');
+              let resJsonStr = '';
+              if (typeof window.AndroidBridge.executeLlmCall === 'function') {
+                resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, userPrompt, activeApiKey || '', activeModel, activeEndpoint);
+              } else if (typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
+                resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey || '', activeModel);
+              }
               const resJson = JSON.parse(resJsonStr || '{}');
               if (resJson.success && resJson.content) {
                 translatedText = resJson.content;
+              } else if (resJson.error) {
+                console.warn('AndroidBridge LLM call notice:', resJson.error);
               }
             } catch (err) {
-              console.warn('Native DeepSeek call error:', err);
+              console.warn('Native LLM bridge call error:', err);
             }
           }
 
-          // 3. Try Web fetch with client Active-RAG context
+          // 3. Try direct client Web fetch with client Active-RAG context
           if (!translatedText) {
             try {
-              const fetchRes = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
+              const fetchHeaders = { 'Content-Type': 'application/json' };
+              if (activeApiKey) {
+                fetchHeaders['Authorization'] = `Bearer ${activeApiKey}`;
+              }
+              const fetchRes = await fetchWithTimeout(activeEndpoint, {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${activeApiKey}`
-                },
+                headers: fetchHeaders,
                 body: JSON.stringify({
-                  model: 'deepseek-chat',
+                  model: activeModel,
                   messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
@@ -3303,14 +3641,14 @@ function initTranslationStudio() {
                   temperature: 0.1,
                   max_tokens: 4096
                 })
-              }, 20000);
+              }, 25000);
 
               if (fetchRes.ok) {
                 const fetchJson = await fetchRes.json();
                 translatedText = fetchJson.choices?.[0]?.message?.content || '';
               }
             } catch (fetchErr) {
-              console.warn('Direct web fetch to DeepSeek error:', fetchErr);
+              console.warn('Direct web fetch error:', fetchErr);
             }
           }
         }
