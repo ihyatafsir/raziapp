@@ -500,39 +500,61 @@ def setup_corpus() -> List[Dict[str, Any]]:
         }
         books.append(book_info)
 
-    # Filter: Select strictly the two latest versions of each work (Pure English + Bilingual Apparatus)
+    # Filter: If v5 exists, no need for v4 epubs; if v5 does not exist yet, put v4 (1 masterwork per work)
+    EXCLUDED_FILES = {
+        'sanan.epub', 'senan2.epub', 'senanebook.epub', 'footnoteless_book.epub',
+        'bilingual_book.epub', 'arbain_en.epub', 'asrar_tanzil_en.epub'
+    }
+
+    def get_canonical_work_id(fname):
+        slug = get_work_slug(fname)
+        for vpat in ['_vol_', '_v2_vol_', '_v3_vol_']:
+            if vpat in slug:
+                slug = slug.split(vpat)[0]
+        if slug.startswith('matalib'):
+            slug = 'al_matalib_al_aliyah'
+        if 'tafsir_kabir' in slug:
+            slug = 'tafsir_kabir'
+        if 'ihya' in slug:
+            slug = 'ihya_ulum_al_din'
+        return slug
+
+    manifest_path = SOURCE_EPUBS_DIR / 'wyrenet_classical_corpus_l1_manifest.json'
+    manifest_v5 = set()
+    if manifest_path.exists():
+        try:
+            mdata = json.loads(manifest_path.read_text(encoding='utf-8'))
+            for mb in mdata.get('books', []):
+                if mb.get('version') == 'v5':
+                    manifest_v5.add(mb.get('filename'))
+        except Exception:
+            pass
+
     work_groups = {}
     for b in books:
-        slug = b["work_slug"]
-        if slug not in work_groups:
-            work_groups[slug] = []
-        work_groups[slug].append(b)
+        fname = b["filename"]
+        if fname in EXCLUDED_FILES:
+            continue
+        cid = get_canonical_work_id(fname)
+        if fname in manifest_v5 or 'v5' in fname or 'complete_76sections' in fname or 'zero_truncation' in fname or 'oversight' in fname or 'futuhat' in fname:
+            b["version"] = "v5"
+            b["is_v5"] = True
+        else:
+            b["is_v5"] = False
+        if cid not in work_groups:
+            work_groups[cid] = []
+        work_groups[cid].append(b)
 
     filtered_books = []
-    for slug, group in work_groups.items():
-        pure_cands = [b for b in group if b["is_pure_en"]]
-        bilingual_cands = [b for b in group if b["is_bilingual"]]
-        sq_cands = [b for b in group if b["is_sq"]]
-
-        pure_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-        bilingual_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-        sq_cands.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-
-        chosen = []
-        if pure_cands:
-            chosen.append(pure_cands[0])
-        if bilingual_cands:
-            chosen.append(bilingual_cands[0])
-
-        if len(chosen) < 2:
-            group.sort(key=lambda b: (-version_score(b), -b["size_mb"]))
-            for b in group:
-                if b not in chosen and version_score(b) > 0:
-                    chosen.append(b)
-                    if len(chosen) == 2:
-                        break
-
-        filtered_books.extend(chosen[:2])
+    for cid, group in sorted(work_groups.items()):
+        v5s = [b for b in group if b["is_v5"]]
+        if v5s:
+            pures = [b for b in v5s if b["is_pure_en"]]
+            chosen = pures[0] if pures else v5s[0]
+        else:
+            pures = [b for b in group if b["is_pure_en"]]
+            chosen = pures[0] if pures else group[0]
+        filtered_books.append(chosen)
 
     books = filtered_books
 
