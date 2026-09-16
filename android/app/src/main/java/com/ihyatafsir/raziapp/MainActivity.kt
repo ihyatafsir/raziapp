@@ -200,6 +200,33 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        fun fetchUrl(urlStr: String): String {
+            val callThread = java.util.concurrent.Executors.newSingleThreadExecutor()
+            val future = callThread.submit(java.util.concurrent.Callable<String> {
+                try {
+                    val url = java.net.URL(urlStr.trim())
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "GET"
+                    conn.setRequestProperty("User-Agent", "RaziApp-AynStudio/2.4")
+                    conn.connectTimeout = 15000
+                    conn.readTimeout = 30000
+                    if (conn.responseCode in 200..299) {
+                        conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    } else {
+                        ""
+                    }
+                } catch (e: Exception) {
+                    ""
+                }
+            })
+            return try {
+                future.get(35, java.util.concurrent.TimeUnit.SECONDS)
+            } catch (e: Exception) {
+                ""
+            }
+        }
+
+        @JavascriptInterface
         fun executeDeepSeekCall(systemPrompt: String, userPrompt: String, apiKey: String, model: String): String {
             return executeLlmCall(systemPrompt, userPrompt, apiKey, model, "https://api.deepseek.com/chat/completions")
         }

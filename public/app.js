@@ -1490,6 +1490,15 @@ window.selectBook = async function(bookId) {
 
   closeLibraryModal();
 
+  // For client-generated treatises, clear currentZip and load directly from local offline store
+  if (bookId && bookId.startsWith('ayn_')) {
+    if (window.clientEpubEngine) {
+      window.clientEpubEngine.currentZip = null;
+    }
+    await loadBookToc(bookId);
+    return;
+  }
+
   // 1. Try pure client-side EPUB unpack if epub_engine and filename available
   if (window.clientEpubEngine && (book.asset_url || book.filename)) {
     const epubUrl = book.asset_url || `epubs/${book.filename}`;
@@ -2708,7 +2717,115 @@ async function loadOpenItiResults(query = '') {
   window._lastOpenItiResults = results;
 }
 
-window.selectOpenItiItem = function(idx) {
+
+// Clean OpenITI manuscript metadata and format paragraphs
+function cleanOpenItiManuscript(rawText) {
+  if (!rawText) return '';
+  let body = rawText;
+  const headerEnd = rawText.indexOf('#META#Header#End#');
+  if (headerEnd !== -1) {
+    body = rawText.substring(headerEnd + '#META#Header#End#'.length).trim();
+  }
+  body = body.replace(/#META#[^\n]*\n/g, '');
+  body = body.replace(/#+\s*PageV\d+P\d+/g, '');
+  body = body.replace(/ms\d+/g, '');
+  body = body.replace(/\n~~+/g, ' ');
+  body = body.replace(/~~+/g, ' ');
+  body = body.replace(/###\s*\|\s*/g, '\n\n### ');
+
+  const lines = body.split('\n').map(l => {
+    const s = l.trim();
+    if (!s || s.startsWith('######OpenITI#')) return '';
+    return s.replace(/^#+\s*/, '');
+  }).filter(Boolean);
+
+  const joined = lines.join('\n\n');
+  return joined.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// Robust resolution of true Arabic manuscript text
+async function resolveArabicManuscriptText(source) {
+  if (!source) return '';
+
+  // 1. Direct raw text (from direct paste or file upload)
+  if (source.rawText && source.rawText.trim().length > 20) {
+    return source.rawText.trim();
+  }
+
+  // 2. Local Embedded Texts Match
+  try {
+    const embeddedTexts = await loadEmbeddedTexts();
+    const normTitle = (source.title_en || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normId = (source.identifier || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const found = embeddedTexts.find(t => {
+      const tNorm = (t.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const tIdNorm = (t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (t.id === source.identifier) return true;
+      if (normTitle && (tNorm === normTitle || tIdNorm.includes(normTitle) || normTitle.includes(tNorm))) return true;
+      if (normId && (tIdNorm.includes(normId) || normId.includes(tIdNorm))) return true;
+      return false;
+    });
+
+    if (found && found.excerpt && found.excerpt.trim().length > 50) {
+      source.rawText = found.excerpt.trim();
+      return source.rawText;
+    }
+  } catch (e) {
+    console.warn('Embedded text lookup notice:', e);
+  }
+
+  // 3. Network Fetch from OpenITI raw URL
+  const targetUrl = source.raw_url || (source.identifier && source.identifier.startsWith('http') ? source.identifier : null);
+  if (targetUrl) {
+    let rawText = '';
+    // Try AndroidBridge native fetch first
+    if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === 'function') {
+      try {
+        rawText = window.AndroidBridge.fetchUrl(targetUrl);
+      } catch (bridgeErr) {
+        console.warn('AndroidBridge fetchUrl error:', bridgeErr);
+      }
+    }
+
+    // Try web fetch fallback
+    if (!rawText || rawText.length < 50) {
+      try {
+        const resp = await fetch(targetUrl);
+        if (resp.ok) {
+          rawText = await resp.text();
+        }
+      } catch (fetchErr) {
+        console.warn('Direct web fetch error:', fetchErr);
+      }
+    }
+
+    // Try local/remote backend preview API
+    if (!rawText || rawText.length < 50) {
+      try {
+        const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(targetUrl)}`));
+        if (apiResp.ok) {
+          const apiJson = await apiResp.json();
+          rawText = apiJson.preview || '';
+        }
+      } catch (apiErr) {
+        console.warn('API preview fetch error:', apiErr);
+      }
+    }
+
+    if (rawText && rawText.length > 50) {
+      const cleaned = cleanOpenItiManuscript(rawText);
+      if (cleaned.length > 50) {
+        source.rawText = cleaned;
+        return cleaned;
+      }
+    }
+  }
+
+  return '';
+}
+
+window.selectOpenItiItem = async function(idx) {
   const results = window._lastOpenItiResults || [];
   const item = results[idx];
   if (!item) return;
@@ -2716,12 +2833,14 @@ window.selectOpenItiItem = function(idx) {
   studioSelectedSource = {
     type: 'openiti',
     identifier: item.raw_url || item.id,
+    raw_url: item.raw_url,
     author: item.author_lat || item.author_ar || 'Classical Scholar',
     title_ar: item.title_ar || 'كتاب كلاسيكي',
-    title_en: item.title_lat || 'Classical Treatise'
+    title_en: item.title_lat || 'Classical Treatise',
+    rawText: ''
   };
 
-  updateStudioSelectionSummary();
+  updateStudioSelectionSummary('Fetching manuscript text...');
 
   const cards = document.querySelectorAll('.openiti-card');
   cards.forEach((c, i) => {
@@ -2730,6 +2849,13 @@ window.selectOpenItiItem = function(idx) {
     const btn = c.querySelector('.openiti-select-btn');
     if (btn) btn.textContent = isThis ? 'Selected' : 'Select';
   });
+
+  const text = await resolveArabicManuscriptText(studioSelectedSource);
+  if (text) {
+    updateStudioSelectionSummary();
+  } else {
+    updateStudioSelectionSummary('Manuscript ready to fetch on start');
+  }
 };
 
 async function loadLocalStudioSources() {
@@ -2769,11 +2895,12 @@ async function loadLocalStudioSources() {
   window._localSources = sources;
 }
 
-function updateStudioSelectionSummary() {
+function updateStudioSelectionSummary(customStatus = '') {
   const summaryBox = document.getElementById('studio-selection-summary');
   const summaryAr = document.getElementById('summary-ar-title');
   const summaryEn = document.getElementById('summary-en-title');
   const summaryAuthor = document.getElementById('summary-author');
+  const summarySnippet = document.getElementById('summary-preview-snippet');
 
   if (!studioSelectedSource) {
     if (summaryBox) summaryBox.style.display = 'none';
@@ -2784,6 +2911,15 @@ function updateStudioSelectionSummary() {
   if (summaryAr) summaryAr.textContent = studioSelectedSource.title_ar || '';
   if (summaryEn) summaryEn.textContent = studioSelectedSource.title_en || '';
   if (summaryAuthor) summaryAuthor.textContent = `${studioSelectedSource.author} [${studioSelectedSource.type.toUpperCase()}]`;
+
+  if (summarySnippet) {
+    if (studioSelectedSource.rawText) {
+      const excerpt = studioSelectedSource.rawText.substring(0, 180).replace(/\n+/g, ' ');
+      summarySnippet.textContent = `"${excerpt}..."`;
+    } else {
+      summarySnippet.textContent = customStatus || '';
+    }
+  }
 }
 
 // ==========================================================================
@@ -3379,20 +3515,11 @@ function initTranslationStudio() {
     if (monitorFill) monitorFill.style.width = '10%';
 
     try {
-      // 1. Resolve raw Arabic text
-      let arabicText = studioSelectedSource.rawText || '';
-      if (!arabicText) {
-        const embeddedTexts = await loadEmbeddedTexts();
-        const found = embeddedTexts.find(t => (t.id === studioSelectedSource.identifier || t.title === studioSelectedSource.title_en));
-        if (found && found.excerpt) {
-          arabicText = found.excerpt;
-        } else {
-          arabicText = `بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ - الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ
-
-قَالَ رَحِمَهُ اللَّهُ فِي ${studioSelectedSource.title_ar}: اعْلَمْ أَنَّ الْعِلْمَ بِاللَّهِ تَعَالَى وَصِفَاتِهِ وَأَفْعَالِهِ هُوَ أَشْرَفُ الْعُلُومِ مَرْتَبَةً وَأَعْلَاهَا مَنْزِلَةً، وَبِهِ يَحْصُلُ الْفَوْزُ بِالسَّعَادَةِ الأَبَدِيَّةِ.
-
-فَصْلٌ فِي إِثْبَاتِ الْوَاجِبِ لِذَاتِهِ: كُلُّ مَوْجُودٍ إِمَّا أَنْ يَكُونَ وَاجِبَ الْوُجُودِ لِذَاتِهِ، أَوْ مُمْكِنَ الْوُجُودِ لِذَاتِهِ. فَإِنْ كَانَ وَاجِبًا فَهُوَ الْمَطْلُوبُ، وَإِنْ كَانَ مُمْكِنًا افْتَقَرَ إِلَى مُؤَثِّرٍ يُرَجِّحُ وُجُودَهُ عَلَى عَدَمِهِ.`;
-        }
+      // 1. Resolve authentic Arabic manuscript text
+      if (monitorBadge) monitorBadge.textContent = 'Resolving Manuscript';
+      const arabicText = await resolveArabicManuscriptText(studioSelectedSource);
+      if (!arabicText || arabicText.trim().length < 20) {
+        throw new Error(`Unable to load manuscript text for "${studioSelectedSource.title_en}". Please check your network connection or paste the Arabic text directly into the Upload/Paste tab.`);
       }
 
       // 2. Extract Quad-Lexical RAG Roots with Awzān reduction
