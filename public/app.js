@@ -2832,81 +2832,152 @@ function cleanOpenItiManuscript(rawText) {
 
 // Robust resolution of true Arabic manuscript text
 async function resolveArabicManuscriptText(source) {
-  if (!source) return '';
+  if (!source) return "";
 
   // 1. Direct raw text (from direct paste or file upload)
   if (source.rawText && source.rawText.trim().length > 20) {
     return source.rawText.trim();
   }
 
-  // 2. Local Embedded Texts Match
+  // 2. Local Embedded Texts Match (0ms instant offline resolution)
   try {
     const embeddedTexts = await loadEmbeddedTexts();
-    const normTitle = (source.title_en || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const normId = (source.identifier || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normTitle = (source.title_en || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const normId = (source.identifier || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const normTitleAr = (source.title_ar || "").replace(/[ً-ٰٟ\s]/g, "");
 
     const found = embeddedTexts.find(t => {
-      const tNorm = (t.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const tIdNorm = (t.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const tNorm = (t.title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const tIdNorm = (t.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const tAr = (t.title_ar || "").replace(/[ً-ٰٟ\s]/g, "");
       if (t.id === source.identifier) return true;
       if (normTitle && (tNorm === normTitle || tIdNorm.includes(normTitle) || normTitle.includes(tNorm))) return true;
       if (normId && (tIdNorm.includes(normId) || normId.includes(tIdNorm))) return true;
+      if (normTitleAr && tAr && (tAr === normTitleAr || tAr.includes(normTitleAr) || normTitleAr.includes(tAr))) return true;
       return false;
     });
 
-    if (found && found.excerpt && found.excerpt.trim().length > 50) {
-      source.rawText = found.excerpt.trim();
+    if (found && (found.full_text || found.excerpt)) {
+      source.rawText = (found.full_text || found.excerpt).trim();
       return source.rawText;
     }
   } catch (e) {
-    console.warn('Embedded text lookup notice:', e);
+    console.warn("Embedded text lookup notice:", e);
   }
 
-  // Helper to fetch and clean from URL with smart transliteration mutators
+  // Helper to fetch and clean from URL with 5-Pillar Epistemic Self-Healing Resolution
   async function fetchFromUrl(url) {
-    if (!url) return '';
+    if (!url) return "";
 
+    // 1. Build heuristic candidate URL variations
     const urlsToTry = [url];
+    if (url.includes(".mARkdown")) {
+      urlsToTry.push(url.replace(/\.mARkdown$/, ""));
+    } else {
+      urlsToTry.push(url + ".mARkdown");
+    }
+    if (url.includes(".completed")) {
+      urlsToTry.push(url.replace(/\.completed$/, ""));
+    } else {
+      urlsToTry.push(url + ".completed");
+    }
+    if (url.includes("-ara1")) {
+      urlsToTry.push(url.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara2$1"));
+      urlsToTry.push(url.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara2.mARkdown"));
+      urlsToTry.push(url.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara1.mARkdown"));
+    } else if (url.includes("-ara2")) {
+      urlsToTry.push(url.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara1$1"));
+      urlsToTry.push(url.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara1.mARkdown"));
+      urlsToTry.push(url.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara2.mARkdown"));
+    }
     if (url.includes("QawaidCaqaid")) {
       urlsToTry.push(url.replace(/QawaidCaqaid/g, "QawacidCaqaid"));
+      urlsToTry.push(url.replace(/QawaidCaqaid/g, "QawacidCaqaid") + ".mARkdown");
     }
     if (url.includes("QawacidCaqaid")) {
       urlsToTry.push(url.replace(/QawacidCaqaid/g, "QawaidCaqaid"));
     }
-    if (url.includes("-ara1") && !url.includes(".completed")) {
-      urlsToTry.push(url + ".completed");
-    }
 
-    for (const candidateUrl of urlsToTry) {
-      let text = '';
-      if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === 'function') {
-        try { text = window.AndroidBridge.fetchUrl(candidateUrl); } catch (_) {}
+    const candidateList = Array.from(new Set(urlsToTry));
+
+    async function attemptDownload(targetUrl) {
+      let rawText = "";
+      if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === "function") {
+        try { rawText = window.AndroidBridge.fetchUrl(targetUrl); } catch (_) {}
       }
-      if (!text || text.length < 50) {
+      if (!rawText || rawText.length < 50) {
         try {
-          const resp = await fetch(candidateUrl);
-          if (resp.ok) text = await resp.text();
+          const resp = await fetch(targetUrl);
+          if (resp.ok) rawText = await resp.text();
         } catch (_) {}
       }
-      if (!text || text.length < 50) {
+      if (!rawText || rawText.length < 50) {
         try {
-          const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(candidateUrl)}`));
+          const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(targetUrl)}`));
           if (apiResp.ok) {
             const apiJson = await apiResp.json();
-            text = apiJson.preview || '';
+            rawText = apiJson.preview || "";
           }
         } catch (_) {}
       }
-      if (text && text.length > 50) {
+      return rawText;
+    }
+
+    // Try heuristic list first
+    for (const cand of candidateList) {
+      const text = await attemptDownload(cand);
+      if (text && text.length > 50 && !text.includes("404: Not Found")) {
         const cleaned = cleanOpenItiManuscript(text);
-        if (cleaned.length > 50) return cleaned;
+        if (cleaned.length > 50) {
+          source.raw_url = cand;
+          return cleaned;
+        }
       }
     }
-    return '';
+
+    // 2. Dynamic GitHub Folder Discovery if heuristics 404
+    try {
+      const ghMatch = url.match(/https:\/\/raw\.githubusercontent\.com\/OpenITI\/([^\/]+)\/master\/(.+)\/[^\/]+$/);
+      if (ghMatch) {
+        const repo = ghMatch[1];
+        const folder = ghMatch[2];
+        const ghApiUrl = `https://api.github.com/repos/OpenITI/${repo}/contents/${folder}`;
+        let ghItems = null;
+        if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === "function") {
+          try {
+            const res = window.AndroidBridge.fetchUrl(ghApiUrl);
+            if (res && res.startsWith("[")) ghItems = JSON.parse(res);
+          } catch (_) {}
+        }
+        if (!ghItems) {
+          const ghRes = await fetch(ghApiUrl, { headers: { "User-Agent": "RaziApp/2.4" } });
+          if (ghRes.ok) ghItems = await ghRes.json();
+        }
+        if (Array.isArray(ghItems)) {
+          const araFiles = ghItems.filter(f => f.name && f.name.includes("-ara") && !f.name.endsWith(".yml"));
+          for (const f of araFiles) {
+            if (f.download_url) {
+              const text = await attemptDownload(f.download_url);
+              if (text && text.length > 50 && !text.includes("404: Not Found")) {
+                const cleaned = cleanOpenItiManuscript(text);
+                if (cleaned.length > 50) {
+                  source.raw_url = f.download_url;
+                  return cleaned;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (ghApiErr) {
+      console.warn("GitHub directory discovery notice:", ghApiErr);
+    }
+
+    return "";
   }
 
   // 3. Network Fetch from primary OpenITI raw URL
-  const primaryUrl = source.raw_url || (source.identifier && source.identifier.startsWith('http') ? source.identifier : null);
+  const primaryUrl = source.raw_url || (source.identifier && source.identifier.startsWith("http") ? source.identifier : null);
   if (primaryUrl) {
     const cleaned = await fetchFromUrl(primaryUrl);
     if (cleaned) {
