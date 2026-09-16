@@ -204,17 +204,32 @@ class MainActivity : AppCompatActivity() {
             val callThread = java.util.concurrent.Executors.newSingleThreadExecutor()
             val future = callThread.submit(java.util.concurrent.Callable<String> {
                 try {
-                    val url = java.net.URL(urlStr.trim())
-                    val conn = url.openConnection() as java.net.HttpURLConnection
-                    conn.requestMethod = "GET"
-                    conn.setRequestProperty("User-Agent", "RaziApp-AynStudio/2.4")
-                    conn.connectTimeout = 15000
-                    conn.readTimeout = 30000
-                    if (conn.responseCode in 200..299) {
-                        conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    } else {
-                        ""
+                    var currentUrl = urlStr.trim()
+                    var redirects = 0
+                    while (redirects < 5) {
+                        val url = java.net.URL(currentUrl)
+                        val conn = url.openConnection() as java.net.HttpURLConnection
+                        conn.instanceFollowRedirects = true
+                        conn.requestMethod = "GET"
+                        conn.setRequestProperty("User-Agent", "RaziApp-AynStudio/2.4")
+                        conn.connectTimeout = 15000
+                        conn.readTimeout = 30000
+                        val code = conn.responseCode
+                        if (code in 300..399) {
+                            val loc = conn.getHeaderField("Location")
+                            if (!loc.isNullOrBlank()) {
+                                currentUrl = loc
+                                redirects++
+                                continue
+                            }
+                        }
+                        return@Callable if (code in 200..299) {
+                            conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        } else {
+                            ""
+                        }
                     }
+                    ""
                 } catch (e: Exception) {
                     ""
                 }

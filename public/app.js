@@ -2545,7 +2545,25 @@ const SCHOLAR_TRANSLIT_TO_ARABIC = {
   'ibn taymiyyah': 'ابن تيمية',
   'qayyim': 'قيم',
   'ibn al-qayyim': 'ابن القيم',
-  'ibn qayyim': 'ابن قيم'
+  'ibn qayyim': 'ابن قيم',
+  'maarij': 'معارج',
+  'quds': 'قدس',
+  'nafs': 'نفس',
+  'aql': 'عقل',
+  'rooh': 'روح',
+  'ruh': 'روح',
+  'qalb': 'قلب',
+  'tahafut': 'تهافت',
+  'futuhat': 'فتوحات',
+  'fasl': 'فصل',
+  'fusul': 'فصول',
+  'risala': 'رسالة',
+  'maqasid': 'مقاصد',
+  'mankhul': 'منخول',
+  'iqtisad': 'اقتصاد',
+  'mustasfa': 'مستصفى',
+  'kashshaf': 'كشاف',
+  'mufradat': 'مفردات'
 };
 
 const GENERIC_SEARCH_TOKENS = new Set(['ibn', 'bin', 'abu', 'abi', 'aba', 'al', 'el', 'bint', 'umm', 'kitab', 'risala', 'juz', 'sharh']);
@@ -2559,6 +2577,11 @@ function normalizeTranslitQuery(text) {
     t = t.replace(re, v);
   }
 
+  // Handle 'ch' before removing OpenITI 'c' (which represents Ayn ع)
+  t = t.replace(/ch/g, '__CH__');
+  t = t.replace(/c/g, '');
+  t = t.replace(/__CH__/g, 'ch');
+
   // Strip diacritics
   t = t.replace(/[āáàâä]/g, 'a')
        .replace(/[īíìîï]/g, 'i')
@@ -2569,23 +2592,22 @@ function normalizeTranslitQuery(text) {
        .replace(/[ẓ]/g, 'z')
        .replace(/[ḥ]/g, 'h');
 
-  // Strip article prefixes if hyphenated or followed by space
-  t = t.replace(/\\b(al|el|ad|ar|as|at|az|an|ash)[-\\s]/g, ' ');
-  t = t.replace(/\\b(al|el)\\b/g, ' ');
+  // Strip article prefixes
+  t = t.replace(/\b(al|el|ad|ar|as|at|az|an|ash)[-\s]/g, ' ');
+  t = t.replace(/\b(al|el)\b/g, ' ');
 
   // Remove apostrophes, hyphens, and ayn marks without adding spaces
-  t = t.replace(/['`‘'ʿʾ\\-_.]/g, '');
+  t = t.replace(/['`‘'ʿʾ\-_.]/g, '');
 
   t = t.replace(/aim/g, 'aym');
   t = t.replace(/iyyah/g, 'iya')
        .replace(/iyya/g, 'iya')
        .replace(/ou/g, 'u')
        .replace(/oo/g, 'u')
-       .replace(/ee/g, 'i')
-       .replace(/aa/g, 'a');
+       .replace(/ee/g, 'i');
 
-  // OpenITI 'c' represents Ayn (ع) e.g. Ashcari -> ashari, Cabd -> abd
-  t = t.replace(/c/g, '');
+  // Collapse duplicate vowels (e.g. aa -> a, ii -> i, uu -> u) AFTER removing 'c'
+  t = t.replace(/([aeiou])\1+/g, '$1');
 
   // Arabic script normalization
   t = t.replace(/[ً-ٰٟ]/g, '')
@@ -2593,7 +2615,7 @@ function normalizeTranslitQuery(text) {
        .replace(/ى/g, 'ي')
        .replace(/ة/g, 'ه');
 
-  return t.replace(/[^a-z0-9\\u0600-\\u06FF\\s]/g, ' ').replace(/\\s+/g, ' ').trim();
+  return t.replace(/[^a-z0-9\u0600-\u06FF\s]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 async function loadOpenItiResults(query = '') {
@@ -2727,16 +2749,21 @@ function cleanOpenItiManuscript(rawText) {
     body = rawText.substring(headerEnd + '#META#Header#End#'.length).trim();
   }
   body = body.replace(/#META#[^\n]*\n/g, '');
-  body = body.replace(/#+\s*PageV\d+P\d+/g, '');
-  body = body.replace(/ms\d+/g, '');
+  body = body.replace(/(?:#+\s*)?PageV\d+P\d+/gi, '');
+  body = body.replace(/(?:#+\s*)?ms\w+/gi, '');
+  body = body.replace(/@QB@/g, ' «');
+  body = body.replace(/@QE@/g, '» ');
+  body = body.replace(/@[A-Z0-9]+@/g, ' ');
   body = body.replace(/\n~~+/g, ' ');
   body = body.replace(/~~+/g, ' ');
-  body = body.replace(/###\s*\|\s*/g, '\n\n### ');
+  body = body.replace(/###\s*\|\s*/g, '\n\n');
+  body = body.replace(/^[|#]+\s*/gm, '');
 
   const lines = body.split('\n').map(l => {
-    const s = l.trim();
+    let s = l.trim();
     if (!s || s.startsWith('######OpenITI#')) return '';
-    return s.replace(/^#+\s*/, '');
+    s = s.replace(/^[|#]+\s*/, '');
+    return s.replace(/\s+/g, ' ');
   }).filter(Boolean);
 
   const joined = lines.join('\n\n');
@@ -2775,51 +2802,72 @@ async function resolveArabicManuscriptText(source) {
     console.warn('Embedded text lookup notice:', e);
   }
 
-  // 3. Network Fetch from OpenITI raw URL
-  const targetUrl = source.raw_url || (source.identifier && source.identifier.startsWith('http') ? source.identifier : null);
-  if (targetUrl) {
-    let rawText = '';
-    // Try AndroidBridge native fetch first
+  // Helper to fetch and clean from URL
+  async function fetchFromUrl(url) {
+    if (!url) return '';
+    let text = '';
     if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === 'function') {
-      try {
-        rawText = window.AndroidBridge.fetchUrl(targetUrl);
-      } catch (bridgeErr) {
-        console.warn('AndroidBridge fetchUrl error:', bridgeErr);
-      }
+      try { text = window.AndroidBridge.fetchUrl(url); } catch (_) {}
     }
-
-    // Try web fetch fallback
-    if (!rawText || rawText.length < 50) {
+    if (!text || text.length < 50) {
       try {
-        const resp = await fetch(targetUrl);
-        if (resp.ok) {
-          rawText = await resp.text();
-        }
-      } catch (fetchErr) {
-        console.warn('Direct web fetch error:', fetchErr);
-      }
+        const resp = await fetch(url);
+        if (resp.ok) text = await resp.text();
+      } catch (_) {}
     }
-
-    // Try local/remote backend preview API
-    if (!rawText || rawText.length < 50) {
+    if (!text || text.length < 50) {
       try {
-        const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(targetUrl)}`));
+        const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(url)}`));
         if (apiResp.ok) {
           const apiJson = await apiResp.json();
-          rawText = apiJson.preview || '';
+          text = apiJson.preview || '';
         }
-      } catch (apiErr) {
-        console.warn('API preview fetch error:', apiErr);
-      }
+      } catch (_) {}
     }
+    if (text && text.length > 50) {
+      const cleaned = cleanOpenItiManuscript(text);
+      if (cleaned.length > 50) return cleaned;
+    }
+    return '';
+  }
 
-    if (rawText && rawText.length > 50) {
-      const cleaned = cleanOpenItiManuscript(rawText);
-      if (cleaned.length > 50) {
-        source.rawText = cleaned;
-        return cleaned;
+  // 3. Network Fetch from primary OpenITI raw URL
+  const primaryUrl = source.raw_url || (source.identifier && source.identifier.startsWith('http') ? source.identifier : null);
+  if (primaryUrl) {
+    const cleaned = await fetchFromUrl(primaryUrl);
+    if (cleaned) {
+      source.rawText = cleaned;
+      return cleaned;
+    }
+  }
+
+  // 4. Fallback: Search corpus index for alternate edition of the same work
+  try {
+    const corpus = await loadEmbeddedCorpus();
+    const sourceTitleLat = normalizeTranslitQuery(source.title_en || '');
+    const sourceTitleAr = (source.title_ar || '').replace(/[ً-ٰٟ]/g, '');
+    
+    const alternates = corpus.filter(item => {
+      if (item.raw_url === primaryUrl) return false;
+      const itLat = normalizeTranslitQuery(item.title_lat || '');
+      const itAr = (item.title_ar || '').replace(/[ً-ٰٟ]/g, '');
+      if (sourceTitleLat && itLat && (sourceTitleLat === itLat || itLat.includes(sourceTitleLat))) return true;
+      if (sourceTitleAr && itAr && (sourceTitleAr.includes(itAr) || itAr.includes(sourceTitleAr))) return true;
+      return false;
+    });
+
+    for (const alt of alternates) {
+      if (alt.raw_url) {
+        const cleaned = await fetchFromUrl(alt.raw_url);
+        if (cleaned) {
+          source.raw_url = alt.raw_url;
+          source.rawText = cleaned;
+          return cleaned;
+        }
       }
     }
+  } catch (altErr) {
+    console.warn('Alternate edition lookup notice:', altErr);
   }
 
   return '';
@@ -2840,7 +2888,7 @@ window.selectOpenItiItem = async function(idx) {
     rawText: ''
   };
 
-  updateStudioSelectionSummary('Fetching manuscript text...');
+  updateStudioSelectionSummary('⏳ Fetching authentic manuscript excerpt...');
 
   const cards = document.querySelectorAll('.openiti-card');
   cards.forEach((c, i) => {
@@ -2854,7 +2902,7 @@ window.selectOpenItiItem = async function(idx) {
   if (text) {
     updateStudioSelectionSummary();
   } else {
-    updateStudioSelectionSummary('Manuscript ready to fetch on start');
+    updateStudioSelectionSummary('⚠️ Unable to fetch manuscript from archive. Check network or use Upload/Paste.');
   }
 };
 
@@ -3480,6 +3528,7 @@ function initTranslationStudio() {
   const monitorPreview = document.getElementById('monitor-live-preview');
 
   let completedBookId = null;
+  let lastLlmError = '';
 
   startBtn?.addEventListener('click', async () => {
     if (!studioSelectedSource) {
@@ -3576,6 +3625,7 @@ function initTranslationStudio() {
             if (resJson.success && resJson.content) {
               translatedText = resJson.content;
             } else if (resJson.error) {
+              lastLlmError = resJson.error;
               console.warn('AndroidBridge LLM call notice:', resJson.error);
             }
           } catch (err) {
@@ -3625,7 +3675,8 @@ function initTranslationStudio() {
         }
 
         if (!translatedText) {
-          throw new Error(`Cloud API request to ${currentProviderCfg.name} failed. Please verify your API key and network connection.`);
+          const errMsg = lastLlmError ? `${currentProviderCfg.name} API Error: ${lastLlmError}` : `Cloud API request to ${currentProviderCfg.name} failed. Please verify your API key and network connection.`;
+          throw new Error(errMsg);
         }
 
         translatedSections.push({
