@@ -381,10 +381,14 @@ class ClientEpubEngine {
       if (chData.paragraphs && chData.paragraphs.length > 0) {
         parasHtml = chData.paragraphs.map(p => {
           let inner = '';
-          if (p.arabic_text) {
-            inner += '<div class="arabic-block">' + escapeXml(p.arabic_text) + '</div>';
+          const ar = p.arabic_text || (p.is_arabic ? (p.arabic || p.text) : '');
+          if (ar) {
+            inner += '<div class="arabic-block">' + escapeXml(ar) + '</div>';
           }
-          if (p.text && p.text !== p.arabic_text) {
+          if (p.is_apparatus || p.type === 'apparatus') {
+            const app = p.apparatus || p.text || '';
+            inner += '<div class="apparatus-box"><div class="apparatus-title">Philological &amp; Theological Apparatus (AynEngine AI)</div><div>' + escapeXml(app).replace(/\n/g, '<br/>') + '</div></div>';
+          } else if (p.text && p.text !== ar) {
             inner += '<p>' + escapeXml(p.text) + '</p>';
           }
           return inner;

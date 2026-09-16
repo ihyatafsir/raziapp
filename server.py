@@ -374,6 +374,46 @@ def download_android_apk():
         media_type="application/vnd.android.package-archive"
     )
 
+@app.get("/download/desktop/linux")
+@app.head("/download/desktop/linux")
+def download_desktop_linux():
+    """Serves the standalone Linux x64 distribution package."""
+    candidates = [
+        PUBLIC_DIR / "AynEngineAI-linux-x64.tar.gz",
+        BASE_DIR / "aynengine_desktop" / "dist" / "AynEngineAI-linux-x64.tar.gz"
+    ]
+    p = next((c for c in candidates if c.exists()), None)
+    if not p:
+        raise HTTPException(status_code=404, detail="Linux package not found.")
+    return FileResponse(path=str(p), filename="AynEngineAI-linux-x64.tar.gz", media_type="application/gzip")
+
+@app.get("/download/desktop/windows")
+@app.head("/download/desktop/windows")
+def download_desktop_windows():
+    """Serves the standalone Windows x64 distribution package."""
+    candidates = [
+        PUBLIC_DIR / "AynEngineAI-windows-x64.zip",
+        BASE_DIR / "aynengine_desktop" / "dist" / "AynEngineAI-windows-x64.zip"
+    ]
+    p = next((c for c in candidates if c.exists()), None)
+    if not p:
+        raise HTTPException(status_code=404, detail="Windows package not found.")
+    return FileResponse(path=str(p), filename="AynEngineAI-windows-x64.zip", media_type="application/zip")
+
+@app.get("/download/bundle/aab")
+@app.head("/download/bundle/aab")
+def download_android_aab():
+    """Serves the Google Play App Bundle (AAB)."""
+    candidates = [
+        PUBLIC_DIR / "raziapp-v2.4.2.aab",
+        BASE_DIR / "raziapp.aab",
+        BASE_DIR / "android" / "app" / "build" / "outputs" / "bundle" / "release" / "app-release.aab"
+    ]
+    p = next((c for c in candidates if c.exists()), None)
+    if not p:
+        raise HTTPException(status_code=404, detail="AAB bundle not found.")
+    return FileResponse(path=str(p), filename="raziapp-v2.4.2.aab", media_type="application/octet-stream")
+
 
 # --- Translation Studio Endpoints ---
 @app.get("/api/translation/openiti/search")

@@ -51,3 +51,10 @@ android/app/src/main/assets/epubs/
 data
 uploads/
 public/epubs
+
+# Desktop distribution builds
+aynengine_desktop/dist/
+public/AynEngineAI-*.tar.gz
+public/AynEngineAI-*.zip
+*.tar.gz
+*.zip

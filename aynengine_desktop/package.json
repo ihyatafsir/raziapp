@@ -1,0 +1,14 @@
+{
+  "name": "aynengine-ai-studio",
+  "version": "5.1.0",
+  "description": "AynEngine AI Sovereign Morphological Quad-Lexical Translation Studio",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron --no-sandbox .",
+    "build:linux": "electron-builder --linux --x64",
+    "build:win": "electron-builder --win --x64"
+  },
+  "keywords": ["classical-arabic", "quad-lexicon", "kalam", "scholarly-translation", "openiti"],
+  "author": "AynEngine AI",
+  "license": "Proprietary"
+}

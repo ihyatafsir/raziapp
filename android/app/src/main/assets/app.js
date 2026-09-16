@@ -939,6 +939,20 @@ function buildEpubPages(targetPageIndex = 0) {
   const preparedItems = [];
 
   paragraphs.forEach((p, origIdx) => {
+    if (p.is_apparatus || p.type === 'apparatus') {
+      const appContent = escapeHtml(p.apparatus || p.text || '').replace(/\n/g, '<br/>');
+      html += `
+        <article class="paragraph-card is-apparatus-card" id="${p.id || `para-${idx}`}" data-index="${idx}" style="border-left: 3px solid var(--accent-primary); background: rgba(59, 130, 246, 0.04);">
+          <div class="dialectical-badge-row proof">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>Philological & Theological Apparatus</span>
+          </div>
+          <div class="text-content" style="font-size: 0.9em; line-height: 1.6; color: var(--text-secondary); margin-top: 0.5rem;">${appContent}</div>
+        </article>
+      `;
+      return;
+    }
+
     const isArabic = p.is_arabic || Boolean(p.arabic);
     const rawText = isArabic ? (p.arabic || p.text || '') : (p.text || '');
 
@@ -3143,85 +3157,68 @@ function normalizeArabicRoot(root) {
 
 // Classical Arabic Morphological Pattern Un-affixing (Awzān Reduction)
 function extractWordRootCandidates(word, lexicon) {
-  if (!word || word.length < 2) return [];
+  if (!word || word.length < 3) return [];
   let w = normalizeArabicRoot(word);
-  if (w.length < 2) return [];
+  if (w.length < 3) return [];
 
-  // Direct exact match in 4,054 roots
-  if (lexicon && lexicon[w]) return [w];
-
-  // 1. Iterative prefix stripping (compound & definite articles)
-  let changed = true;
-  while (changed && w.length >= 4) {
-    changed = false;
-    for (const p of ['وال', 'فال', 'كال', 'بال', 'لل', 'ال', 'است', 'يت', 'مت', 'وت', 'فت']) {
-      if (w.startsWith(p) && w.length - p.length >= 3) {
-        w = w.substring(p.length);
-        changed = true;
-        break;
-      }
+  // 1. Strip compound / definite article prefixes
+  const prefixes = ['وال', 'فال', 'كال', 'بال', 'لل', 'ال', 'است', 'يت', 'مت', 'وت', 'فت'];
+  for (const p of prefixes) {
+    if (w.startsWith(p) && w.length - p.length >= 3) {
+      w = w.substring(p.length);
+      break;
     }
   }
 
-  // 2. Iterative suffix stripping (pronouns, plurals, feminine endings)
-  changed = true;
-  while (changed && w.length >= 4) {
-    changed = false;
-    for (const s of ['ات', 'ون', 'ين', 'ان', 'ية', 'هم', 'هن', 'هما', 'كم', 'كن', 'كما', 'نا', 'ها', 'ة', 'اء']) {
-      if (w.endsWith(s) && w.length - s.length >= 3) {
-        w = w.substring(0, w.length - s.length);
-        changed = true;
-        break;
-      }
+  // 2. Strip multi-letter suffixes and feminine tāʾ marbūṭah
+  const suffixes = ['ات', 'ون', 'ين', 'ان', 'ية', 'هم', 'هن', 'هما', 'كم', 'كن', 'كما', 'نا', 'ها', 'ة'];
+  for (const s of suffixes) {
+    if (w.endsWith(s) && w.length - s.length >= 3) {
+      w = w.substring(0, w.length - s.length);
+      break;
     }
   }
 
   const cands = new Set();
-  if (lexicon && lexicon[w]) cands.add(w);
-
   const L = w.length;
   if (L === 3) {
     cands.add(w);
   } else if (L === 4) {
-    if (lexicon && lexicon[w]) cands.add(w);
-    if (w[2] === 'ي' || w[2] === 'و') cands.add(w[0] + w[1] + w[3]); // فعيل / فعول (عظيم -> عظم, قلوب -> قلب)
-    if (w[1] === 'ا') cands.add(w[0] + w[2] + w[3]); // فاعل (عالم -> علم, قادر -> قدر)
-    if (w[2] === 'ا') cands.add(w[0] + w[1] + w[3]); // فعال (نباط -> نبط, كلام -> كلم)
-    if (w[0] === 'م') cands.add(w[1] + w[2] + w[3]); // مفعل (منبع -> نبع, مدرك -> درك)
-    if (w[0] === 'ت') cands.add(w[1] + w[2] + w[3]); // تفعيل / تفعل
-    if (w[0] === 'ا') cands.add(w[1] + w[2] + w[3]); // أفعل (أحسن -> حسن, أكبر -> كبر)
-    if (w[0] === 'ي') cands.add(w[1] + w[2] + w[3]); // يفعل
-    if (['ه', 'ك', 'ي'].includes(w[3])) cands.add(w.substring(0, 3)); // Clitic pronoun
+    if (w[2] === 'ي' || w[2] === 'و') cands.add(w[0] + w[1] + w[3]); // فعيل / فعول (لطيف, عظيم)
+    if (w[1] === 'ا') cands.add(w[0] + w[2] + w[3]); // فاعل (عالم, قادر)
+    if (w[0] === 'م') cands.add(w[1] + w[2] + w[3]); // مفعل / مفعل (منبع, مدرك)
+    if (w[0] === 'ت') cands.add(w[1] + w[2] + w[3]); // تفعيل / تفعل (تقليب)
+    if (w[0] === 'ا') cands.add(w[1] + w[2] + w[3]); // أفعل (أفقه, أكبر)
+    if (w[3] === 'ه' || w[3] === 'ك' || w[3] === 'ي') cands.add(w.substring(0, 3)); // قولـه, ربه
   } else if (L === 5) {
-    if (w[2] === 'ا' && (w[3] === 'ئ' || w[3] === 'ي')) cands.add(w[0] + w[1] + w[4]); // لطائف -> لطف, عقائد -> عقد
-    if (w[0] === 'م' && w[3] === 'و') cands.add(w[1] + w[2] + w[4]); // مفعول (معلوم -> علم, موجود -> وجد)
-    if (w[0] === 'ت' && w[3] === 'ي') cands.add(w[1] + w[2] + w[4]); // تفعيل (توحيد -> وحد, تخصيص -> خصص)
-    if (w[0] === 'م' && w[2] === 'ا') cands.add(w[1] + w[3] + w[4]); // مفاعل (مطالب -> طلب)
-    if (w[0] === 'ا' && w[3] === 'ا') cands.add(w[1] + w[2] + w[4]); // إفعal (إدراك -> درك, إحسان -> حسن)
-    if (w[0] === 'ا' && w[2] === 'ت') cands.add(w[1] + w[3] + w[4]); // افتعال (اختيار -> خير)
-    if (w[0] === 'ت') cands.add(w.substring(1)); // تفعل (تكلم -> كلم)
+    if (w[0] === 'م' && w[3] === 'و') cands.add(w[1] + w[2] + w[4]); // مفعول (معلوم)
+    if (w[0] === 'ت' && w[3] === 'ي') cands.add(w[1] + w[2] + w[4]); // تفعيل (تخصيص)
+    if (w[0] === 'م' && w[2] === 'ا') cands.add(w[1] + w[3] + w[4]); // مفاعل (مخاطب)
+    if (w[0] === 'ا' && w[3] === 'ا') cands.add(w[1] + w[2] + w[4]); // إفعال (إدراك)
+    if (w[0] === 'ا' && w[2] === 'ت') cands.add(w[1] + w[3] + w[4]); // افتعال (اختيار)
+    if ((w[4] === 'ه' || w[4] === 'ك' || w[4] === 'ي') && (w[2] === 'ي' || w[2] === 'و')) cands.add(w[0] + w[1] + w[3]);
   } else if (L === 6) {
-    if (w[0] === 'ا' && w[2] === 'ت' && w[4] === 'ا') cands.add(w[1] + w[3] + w[5]); // افتعال (اشتراك -> شرك)
-    if (w[0] === 'ا' && w[1] === 'ن' && w[4] === 'ا') cands.add(w[2] + w[3] + w[5]); // انفعال (انقلاب -> قلب)
-    if (w.startsWith('است') && w[4] === 'ا') cands.add(w[3] + w[4] + w[5]); // استفعال (استنباط -> نبط)
-    if (w[0] === 'ا' && w[2] === 'ا' && w[4] === 'ي') cands.add(w[1] + w[3] + w[5]); // أفاعيل
+    if (w[0] === 'ا' && w[2] === 'ت' && w[4] === 'ا') cands.add(w[1] + w[3] + w[5]); // افتعال (اشتراك)
+    if (w[0] === 'ا' && w[1] === 'ن' && w[4] === 'ا') cands.add(w[2] + w[3] + w[5]); // انفعال (انقلاب)
+    if (w.startsWith('است') && w[4] === 'ا') cands.add(w[3] + w[4] + w[5]); // استفعال (استنباط)
+    if (w[0] === 'ا' && w[2] === 'ا' && w[4] === 'ي') cands.add(w[1] + w[3] + w[5]); // أفاعيل (أغاليط)
   }
 
   const valid = [];
   for (const c of cands) {
     const norm = normalizeArabicRoot(c);
-    if (!CLASSICAL_STOP_ROOTS.has(norm) && lexicon && lexicon[norm]) {
+    if (norm.length >= 3 && !CLASSICAL_STOP_ROOTS.has(norm) && lexicon && lexicon[norm]) {
       valid.push(norm);
     }
   }
   return valid;
 }
 
-// Complete Cross-Corpus Arabic Root Extractor with Salience Scoring
+// Complete Cross-Corpus Arabic Root Extractor with Salience Scoring (Parity with VM)
 function extractArabicRoots(arabicText, ragBundle) {
   if (!arabicText || !ragBundle) return [];
   const lexicon = ragBundle.lexicon || ragBundle;
-  const words = arabicText.match(/[ء-ي]{2,}/g) || [];
+  const words = arabicText.match(/[ء-ي]{3,}/g) || [];
 
   const counts = new Map();
   for (const w of words) {
@@ -3253,6 +3250,7 @@ function extractArabicRoots(arabicText, ragBundle) {
     let src = e.raghib ? 'Al-Mufradat (Al-Raghib)' : (e.asas_literal ? 'Asas al-Balaghah (Al-Zamakhshari)' : (e.lisan ? 'Lisan al-Arab' : 'Kitab al-Ayn'));
     return {
       root: r,
+      score: item.score,
       source: src,
       meaning: mainDef,
       entry: e
@@ -3260,7 +3258,6 @@ function extractArabicRoots(arabicText, ragBundle) {
   });
 }
 
-// Syntactic Canon Matching from Sibawayh's Al-Kitab
 function matchSibawayhRule(arabicText, ragBundle) {
   const rules = ragBundle?.sibawayh_rules || {};
   if (!arabicText || Object.keys(rules).length === 0) {
@@ -3826,82 +3823,106 @@ function initTranslationStudio() {
         const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
         const { systemPrompt, userPrompt } = ragContext;
 
-        // Execute with automatic retry on transient network timeout (up to 3 attempts per section)
+        let anchorsBlock = "";
+        let finalTranslation = "";
+        sectionTitle = `Section ${i + 1}: Epistemic Dialectic`;
+
+        // Execute with Sovereign Zero-Loss Pipeline (Auto-Continuation on Length + Completeness Validation)
         for (let attempt = 1; attempt <= 3; attempt++) {
           lastLlmError = "";
+          let accumulatedContent = "";
+          let currentMessages = [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ];
 
-          // 1. Direct Native Android Bridge (Zero CORS, 100% Standalone)
-          if (window.AndroidBridge) {
-            try {
-              let resJsonStr = "";
-              if (typeof window.AndroidBridge.executeLlmCall === "function") {
-                resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, userPrompt, activeApiKey, activeModel, activeEndpoint);
-              } else if (typeof window.AndroidBridge.executeDeepSeekCall === "function") {
-                resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, activeModel);
+          try {
+            // Continuation loop (up to 3 continuations if finish_reason === 'length')
+            let continueRounds = 0;
+            while (continueRounds < 3) {
+              let chunkContent = "";
+              let finishReason = "stop";
+
+              // 1. Direct Native Android Bridge
+              if (window.AndroidBridge) {
+                let resJsonStr = "";
+                if (typeof window.AndroidBridge.executeLlmMessages === "function") {
+                  resJsonStr = window.AndroidBridge.executeLlmMessages(JSON.stringify(currentMessages), activeApiKey, activeModel, activeEndpoint);
+                } else if (typeof window.AndroidBridge.executeLlmCall === "function") {
+                  const lastUser = currentMessages[currentMessages.length - 1].content;
+                  resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, lastUser, activeApiKey, activeModel, activeEndpoint);
+                } else if (typeof window.AndroidBridge.executeDeepSeekCall === "function") {
+                  const lastUser = currentMessages[currentMessages.length - 1].content;
+                  resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, lastUser, activeApiKey, activeModel);
+                }
+
+                const resJson = JSON.parse(resJsonStr || "{}");
+                if (resJson.success && resJson.content) {
+                  chunkContent = resJson.content;
+                  finishReason = resJson.finish_reason || "stop";
+                } else if (resJson.error) {
+                  lastLlmError = resJson.error;
+                }
               }
-              const resJson = JSON.parse(resJsonStr || "{}");
-              if (resJson.success && resJson.content) {
-                translatedText = resJson.content;
-              } else if (resJson.error) {
-                lastLlmError = resJson.error;
-                console.warn(`AndroidBridge LLM attempt ${attempt} notice:`, resJson.error);
+
+              // 2. Direct client Web fetch fallback (90s timeout)
+              if (!chunkContent) {
+                const fetchRes = await fetchWithTimeout(activeEndpoint, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${activeApiKey}`
+                  },
+                  body: JSON.stringify({
+                    model: activeModel,
+                    messages: currentMessages,
+                    temperature: 0.1,
+                    max_tokens: 4096
+                  })
+                }, 90000);
+
+                if (fetchRes.ok) {
+                  const fetchJson = await fetchRes.json();
+                  const choice = fetchJson.choices?.[0];
+                  chunkContent = choice?.message?.content || "";
+                  finishReason = choice?.finish_reason || "stop";
+                } else {
+                  const errBody = await fetchRes.text().catch(() => "");
+                  lastLlmError = `HTTP ${fetchRes.status}: ${errBody.substring(0, 100)}`;
+                }
               }
-            } catch (err) {
-              console.warn(`Native LLM bridge attempt ${attempt} error:`, err);
-            }
-          }
 
-          // 2. Direct client Web fetch fallback (90s timeout)
-          if (!translatedText) {
-            try {
-              const fetchRes = await fetchWithTimeout(activeEndpoint, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${activeApiKey}`
-                },
-                body: JSON.stringify({
-                  model: activeModel,
-                  messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                  ],
-                  temperature: 0.1,
-                  max_tokens: 4096
-                })
-              }, 90000);
+              if (!chunkContent) break;
 
-              if (fetchRes.ok) {
-                const fetchJson = await fetchRes.json();
-                translatedText = fetchJson.choices?.[0]?.message?.content || "";
+              accumulatedContent += (accumulatedContent ? "\n" : "") + chunkContent;
+
+              // Zero-Loss Auto-Continuation: Detect token limits and continue
+              if (finishReason === "length") {
+                console.log("[AynEngine Zero-Loss] Token limit reached mid-stream. Auto-continuing...");
+                if (monitorBadge) monitorBadge.textContent = `Auto-continuing Section ${i + 1} (Token Boundary)...`;
+                currentMessages.push({ role: "assistant", content: chunkContent });
+                currentMessages.push({
+                  role: "user",
+                  content: "You reached the token limit mid-sentence. Continue the translation immediately from the exact last word, without repeating previous sentences."
+                });
+                continueRounds++;
               } else {
-                const errBody = await fetchRes.text().catch(() => "");
-                lastLlmError = `HTTP ${fetchRes.status}: ${errBody.substring(0, 100)}`;
+                break;
               }
-            } catch (fetchErr) {
-              lastLlmError = fetchErr.message || "Network error";
-              console.warn(`Direct web fetch attempt ${attempt} error:`, fetchErr);
             }
+
+            if (accumulatedContent) {
+              translatedText = accumulatedContent.trim();
+              break;
+            }
+          } catch (execErr) {
+            lastLlmError = execErr.message || "Execution exception";
+            console.warn(`Translation attempt ${attempt} failed:`, execErr);
           }
 
-          if (translatedText) break;
-
-          // Backoff before retry
           if (attempt < 3) {
             if (monitorBadge) monitorBadge.textContent = `Retrying Section ${i + 1} of ${sectionsToTranslate.length} (Attempt ${attempt + 1}/3)...`;
             await new Promise(r => setTimeout(r, attempt * 2000));
-          }
-        }
-
-        // Cleanly parse out TRANSLATION: and Section Title if structured
-        if (translatedText && translatedText.includes("TRANSLATION:")) {
-          const parts = translatedText.split("TRANSLATION:");
-          const header = parts[0];
-          translatedText = parts[1].trim();
-
-          const titleMatch = header.match(/(?:ENGLISH_TITLE|TITLE_SQ|TITLE_[A-Z]+):\s*([^\r\n]+)/i);
-          if (titleMatch && titleMatch[1].trim()) {
-            sectionTitle = titleMatch[1].trim();
           }
         }
 
@@ -3910,12 +3931,75 @@ function initTranslationStudio() {
           throw new Error(errMsg);
         }
 
+        // Robust single-split parsing (prevents losing text if TRANSLATION: appears inside text)
+        finalTranslation = translatedText;
+        if (translatedText.includes("TRANSLATION:")) {
+          const parts = translatedText.split("TRANSLATION:");
+          const header = parts[0];
+          finalTranslation = parts.slice(1).join("TRANSLATION:").trim();
+
+          const titleMatch = header.match(/(?:ENGLISH_TITLE|TITLE_SQ|TITLE_[A-Z]+):\s*([^\r\n]+)/i);
+          if (titleMatch && titleMatch[1].trim()) {
+            sectionTitle = titleMatch[1].trim();
+          }
+
+          const anchorsMatch = header.match(/QUAD_ANCHORS:\s*([\s\S]*?)$/i);
+          if (anchorsMatch && anchorsMatch[1].trim()) {
+            anchorsBlock = anchorsMatch[1].trim();
+          }
+        }
+
+        // Completeness verification pass: Validate sentence closure
+        const validEndings = ['.', '!', '?', '"', '»', '}', ')', '”', '’'];
+        const trStripped = finalTranslation.trim();
+        if (trStripped && !validEndings.some(e => trStripped.endsWith(e))) {
+          console.log(`[Zero-Loss Validator] Detected unclosed sentence in section ${i + 1}. Requesting completion...`);
+          try {
+            const stitchSystem = "You are a translation stitcher. Complete the final trailing sentence cleanly.";
+            const stitchUser = `The following translation ended abruptly:
+"""${trStripped.slice(-300)}"""
+
+Original Arabic:
+"""${arPassage.slice(-500)}"""
+
+Provide ONLY the clean concluding words to complete the sentence properly:`;
+            
+            let stitchRes = "";
+            if (window.AndroidBridge && typeof window.AndroidBridge.executeLlmCall === "function") {
+              const resJson = JSON.parse(window.AndroidBridge.executeLlmCall(stitchSystem, stitchUser, activeApiKey, activeModel, activeEndpoint) || "{}");
+              if (resJson.success && resJson.content) stitchRes = resJson.content.trim();
+            } else {
+              const stitchFetch = await fetchWithTimeout(activeEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${activeApiKey}` },
+                body: JSON.stringify({
+                  model: activeModel,
+                  messages: [{ role: "system", content: stitchSystem }, { role: "user", content: stitchUser }],
+                  temperature: 0.1,
+                  max_tokens: 256
+                })
+              }, 30000);
+              if (stitchFetch.ok) {
+                const stitchData = await stitchFetch.json();
+                stitchRes = (stitchData.choices?.[0]?.message?.content || "").trim();
+              }
+            }
+
+            if (stitchRes && !stitchRes.startsWith("[") && !stitchRes.toLowerCase().includes("error")) {
+              finalTranslation = trStripped + " " + stitchRes;
+            }
+          } catch (stitchErr) {
+            console.warn("Completeness stitch note:", stitchErr);
+          }
+        }
+
         // Checkpoint section into session memory
         currentSession.translatedSections.push({
           index: i + 1,
           title: sectionTitle,
+          anchors: anchorsBlock,
           arabic: arPassage,
-          translation: translatedText
+          translation: finalTranslation
         });
 
         const pct = Math.round(45 + ((i + 1) / sectionsToTranslate.length) * 35);
@@ -3954,6 +4038,15 @@ function initTranslationStudio() {
             arabic: sec.arabic,
             text: sec.arabic
           });
+          if (sec.anchors) {
+            paras.push({
+              id: `p_${sec.index}_anchors`,
+              type: 'apparatus',
+              is_apparatus: true,
+              apparatus: sec.anchors,
+              text: sec.anchors
+            });
+          }
           paras.push({
             id: `p_${sec.index}_en`,
             type: 'exposition',

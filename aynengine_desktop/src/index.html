@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AynEngine AI — Sovereign Morphological Translation Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Header Bar -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-crest">ع</div>
+        <div class="brand-titles">
+          <div class="brand-name">AYNENGINE AI</div>
+          <div class="brand-subtitle">Sovereign Morphological Translation Studio v5.1</div>
+        </div>
+      </div>
+
+      <div class="header-status-cluster">
+        <div class="status-pill status-online" id="status-engine">
+          <span class="status-dot"></span>
+          <span id="status-engine-text">Engine: Connected</span>
+        </div>
+        <div class="status-pill" id="status-lexicon">
+          <span class="pill-label">Lexicon Corpus:</span>
+          <span class="pill-val" id="lexicon-count-badge">4,054 Roots</span>
+        </div>
+        <div class="status-pill" id="status-kalam">
+          <span class="pill-label">Kalam Ontology:</span>
+          <span class="pill-val">Active</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <select id="sel-target-lang" class="header-select">
+          <option value="en" selected>Target: English (Verbatim)</option>
+          <option value="sq">Target: Albanian (Shqip)</option>
+          <option value="de">Target: German (Deutsch)</option>
+          <option value="fr">Target: French (Français)</option>
+          <option value="tr">Target: Turkish (Türkçe)</option>
+        </select>
+        <button id="btn-open-file" class="btn-secondary">Open Manuscript</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Body -->
+    <div class="workspace-layout">
+      <!-- Left Sidebar: Classical Corpus Browser -->
+      <aside class="corpus-sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">CLASSICAL CORPUS</span>
+          <span class="sidebar-subtitle">OpenITI Masterworks</span>
+        </div>
+
+        <div class="corpus-search-box">
+          <input type="text" id="input-corpus-search" placeholder="Filter treatises or authors...">
+        </div>
+
+        <div class="corpus-tree" id="corpus-tree-container">
+          <!-- Populated by renderer.js -->
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-info">AynEngine Sovereign Active-RAG Architecture</div>
+        </div>
+      </aside>
+
+      <!-- Center Dual-Pane Studio -->
+      <main class="studio-main">
+        <!-- Metadata Config Bar -->
+        <div class="manuscript-config-bar">
+          <div class="config-field">
+            <label>Author</label>
+            <input type="text" id="input-author" value="Imam Abu Hamid al-Ghazali">
+          </div>
+          <div class="config-field">
+            <label>Arabic Title</label>
+            <input type="text" id="input-title-ar" value="قواعد العقائد" dir="rtl">
+          </div>
+          <div class="config-field">
+            <label>English Title</label>
+            <input type="text" id="input-title-en" value="The Foundations of the Articles of Faith">
+          </div>
+          <div class="config-field">
+            <label>Section Heading</label>
+            <input type="text" id="input-section-title" value="مقدمة في التوحيد والصفات" dir="rtl">
+          </div>
+        </div>
+
+        <!-- Split Grid -->
+        <div class="split-pane-grid">
+          <!-- Source Column -->
+          <div class="pane-column pane-source">
+            <div class="pane-header">
+              <div class="pane-title-group">
+                <span class="pane-tag">SOURCE</span>
+                <span class="pane-heading">Classical Arabic Text</span>
+              </div>
+              <div class="pane-meta">
+                <span id="source-char-counter">0 chars</span>
+                <button id="btn-sample-ghazali" class="btn-mini">Load Ghazali</button>
+                <button id="btn-sample-razi" class="btn-mini">Load Razi</button>
+                <button id="btn-sample-nawawi" class="btn-mini">Load Nawawi</button>
+              </div>
+            </div>
+
+            <div class="source-editor-wrap">
+              <textarea id="source-text" dir="rtl" placeholder="Paste classical Arabic manuscript passage here, or select from the Classical Corpus..."></textarea>
+            </div>
+          </div>
+
+          <!-- Target Column -->
+          <div class="pane-column pane-target">
+            <div class="pane-header">
+              <div class="pane-title-group">
+                <span class="pane-tag">OUTPUT</span>
+                <span class="pane-heading">Sovereign Verbatim Translation</span>
+              </div>
+              <div class="pane-meta">
+                <span id="target-word-counter">0 words</span>
+                <button id="btn-copy-output" class="btn-mini">Copy Output</button>
+              </div>
+            </div>
+
+            <div class="output-display-wrap">
+              <div id="output-title-display" class="output-title-bar">
+                <span class="output-title-label">Target Title:</span>
+                <span id="output-section-title" class="output-title-val">Awaiting Translation...</span>
+              </div>
+              <div id="output-text-area" class="output-content-area">
+                <div class="output-placeholder">
+                  Press "Execute Zero-Loss Translation" below to generate verbatim scholarly translation grounded in the 4 Classical Lexicons and Sibawayh syntactic rules.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active-RAG Quad-Lexical Inspector Section -->
+        <div class="apparatus-panel" id="apparatus-panel">
+          <div class="apparatus-header">
+            <div class="apparatus-title-group">
+              <span class="apparatus-tag">ACTIVE-RAG SCHOLIA</span>
+              <span class="apparatus-title">Quad-Lexicon &amp; Sibawayh Syntactic Anchor Constellation</span>
+            </div>
+            <button id="btn-extract-roots-only" class="btn-secondary btn-small">Pre-Retrieve Lexicon Scholia</button>
+          </div>
+
+          <div class="apparatus-grid" id="apparatus-grid">
+            <div class="apparatus-card" id="card-raghib">
+              <div class="card-title">Al-Mufradat (Al-Raghib al-Isfahani)</div>
+              <div class="card-subtitle">Theological, Metaphysical &amp; Quranic Semantics</div>
+              <div class="card-body" id="body-raghib">No roots extracted yet.</div>
+            </div>
+
+            <div class="apparatus-card" id="card-zamakhshari">
+              <div class="card-title">Asas al-Balaghah (Al-Zamakhshari)</div>
+              <div class="card-subtitle">Haqiqah (Literal) vs. Majaz (Metaphorical) Rhetoric</div>
+              <div class="card-body" id="body-zamakhshari">No roots extracted yet.</div>
+            </div>
+
+            <div class="apparatus-card" id="card-lisan-ayn">
+              <div class="card-title">Lisan al-Arab &amp; Kitab al-Ayn</div>
+              <div class="card-subtitle">Archaic Etymology &amp; Morphological Foundations</div>
+              <div class="card-body" id="body-lisan-ayn">No roots extracted yet.</div>
+            </div>
+
+            <div class="apparatus-card" id="card-sibawayh">
+              <div class="card-title">Al-Kitab (Sibawayh)</div>
+              <div class="card-subtitle">Syntactic Canon &amp; Periodic Sentence Equilibrium</div>
+              <div class="card-body" id="body-sibawayh">No syntactic canon matched yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Control Dock -->
+        <div class="studio-dock">
+          <div class="dock-primary-actions">
+            <button id="btn-execute-translation" class="btn-primary-action">
+              <span class="btn-glow"></span>
+              <span class="btn-text">Execute Zero-Loss Translation</span>
+            </button>
+            <button id="btn-export-pure-epub" class="btn-dock-action">Export Pure Scholarly EPUB</button>
+            <button id="btn-export-bilingual-epub" class="btn-dock-action">Export Bilingual Apparatus EPUB</button>
+          </div>
+
+          <div class="dock-status-feedback" id="dock-status-msg">
+            Ready.
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -247,7 +247,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun executeLlmCall(systemPrompt: String, userPrompt: String, apiKey: String, model: String, endpointUrl: String): String {
+        fun executeLlmMessages(messagesJsonStr: String, apiKey: String, model: String, endpointUrl: String): String {
             val callThread = java.util.concurrent.Executors.newSingleThreadExecutor()
             val future = callThread.submit(java.util.concurrent.Callable<String> {
                 try {
@@ -273,18 +273,10 @@ class MainActivity : AppCompatActivity() {
                     conn.readTimeout = 120000
                     conn.doOutput = true
 
+                    val messagesArr = org.json.JSONArray(messagesJsonStr)
                     val jsonBody = org.json.JSONObject().apply {
                         put("model", activeModel)
-                        put("messages", org.json.JSONArray().apply {
-                            put(org.json.JSONObject().apply {
-                                put("role", "system")
-                                put("content", systemPrompt)
-                            })
-                            put(org.json.JSONObject().apply {
-                                put("role", "user")
-                                put("content", userPrompt)
-                            })
-                        })
+                        put("messages", messagesArr)
                         put("temperature", 0.1)
                         put("max_tokens", 4096)
                     }
@@ -296,13 +288,13 @@ class MainActivity : AppCompatActivity() {
                     if (conn.responseCode in 200..299) {
                         val responseText = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
                         val respJson = org.json.JSONObject(responseText)
-                        val content = respJson.getJSONArray("choices")
-                            .getJSONObject(0)
-                            .getJSONObject("message")
-                            .getString("content")
+                        val choice = respJson.getJSONArray("choices").getJSONObject(0)
+                        val content = choice.getJSONObject("message").getString("content")
+                        val finishReason = choice.optString("finish_reason", "stop")
                         org.json.JSONObject().apply {
                             put("success", true)
                             put("content", content)
+                            put("finish_reason", finishReason)
                         }.toString()
                     } else {
                         val errText = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
@@ -330,6 +322,21 @@ class MainActivity : AppCompatActivity() {
             } finally {
                 callThread.shutdown()
             }
+        }
+
+        @JavascriptInterface
+        fun executeLlmCall(systemPrompt: String, userPrompt: String, apiKey: String, model: String, endpointUrl: String): String {
+            val messagesArr = org.json.JSONArray().apply {
+                put(org.json.JSONObject().apply {
+                    put("role", "system")
+                    put("content", systemPrompt)
+                })
+                put(org.json.JSONObject().apply {
+                    put("role", "user")
+                    put("content", userPrompt)
+                })
+            }
+            return executeLlmMessages(messagesArr.toString(), apiKey, model, endpointUrl)
         }
 
         @JavascriptInterface
