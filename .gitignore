@@ -50,3 +50,4 @@ android/app/src/main/assets/epubs/
 # Data & Uploads
 data
 uploads/
+public/epubs

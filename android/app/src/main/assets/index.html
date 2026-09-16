@@ -50,12 +50,6 @@
           <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><path d="M8 7h8"></path><path d="M8 11h5"></path></svg>
         </button>
 
-        <!-- Server Connection Modal Trigger -->
-        <button class="icon-btn server-status-btn" id="btn-open-server-modal" title="Scholarly Engine & Server Settings" style="position: relative;">
-          <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-          <span class="status-indicator-dot offline" id="server-status-dot"></span>
-        </button>
-
                 <!-- Share Current Codex EPUB Button -->
         <button class="icon-btn" id="btn-share-epub" title="Share / Export Complete EPUB Codex">
           <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
@@ -438,61 +432,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modal Sheet: Server Connection Settings -->
-    <div class="modal-backdrop" id="modal-server">
-      <div class="mobile-modal-panel">
-        <div class="modal-header">
-          <div class="modal-title-wrap">
-            <h2 class="modal-title">Scholarly Engine Link</h2>
-            <span class="modal-subtitle" id="server-modal-subtitle">Backend Server & Offline Mode</span>
-          </div>
-          <button class="icon-btn" id="btn-close-server" aria-label="Close Server Settings">
-            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-
-        <div style="padding: 1.25rem 1rem;">
-          <div style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.85rem; line-height: 1.5;">
-            Connect RaziApp to your desktop server for real-time neural Arabic recitation and DeepSeek AI dialectics. When offline, all 193 classical masterworks and chapters remain accessible via the local offline cache.
-          </div>
-
-          <label style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-gold); font-weight: 700; display: block; margin-bottom: 0.5rem;">
-            Server Host URL
-          </label>
-          <div class="search-box" style="margin-bottom: 1rem;">
-            <input type="text" class="search-input" id="server-url-input" placeholder="http://10.20.102.177:5200" style="font-family: monospace; font-size: 0.88rem;">
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
-            <button class="version-toggle-btn" id="btn-preset-lan" style="justify-content: space-between; text-align: left; padding: 0.65rem 0.85rem; border-radius: 8px;">
-              <span>Wi-Fi / LAN Host</span>
-              <code style="font-size: 0.75rem; color: var(--brand-gold);">10.20.102.177:5200</code>
-            </button>
-            <button class="version-toggle-btn" id="btn-preset-local" style="justify-content: space-between; text-align: left; padding: 0.65rem 0.85rem; border-radius: 8px;">
-              <span>Localhost Device</span>
-              <code style="font-size: 0.75rem; color: var(--text-muted);">127.0.0.1:5200</code>
-            </button>
-            <button class="version-toggle-btn" id="btn-preset-offline" style="justify-content: space-between; text-align: left; padding: 0.65rem 0.85rem; border-radius: 8px;">
-              <span>Standalone Mode</span>
-              <code style="font-size: 0.75rem; color: var(--brand-emerald);">193 Offline Books</code>
-            </button>
-          </div>
-
-          <div id="server-test-output" style="font-size: 0.82rem; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-ui); margin-bottom: 1.25rem; color: var(--text-secondary);">
-            Offline store active (193 volumes pre-indexed).
-          </div>
-
-          <div style="display: flex; gap: 0.75rem;">
-            <button class="version-toggle-btn" id="btn-test-connection" style="flex: 1; justify-content: center; padding: 0.75rem;">
-              Test Link
-            </button>
-            <button class="version-toggle-btn active" id="btn-save-connection" style="flex: 1; justify-content: center; padding: 0.75rem; background: var(--brand-gold); color: #000; font-weight: 700;">
-              Save & Reconnect
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
         <!-- AynEngine AI Translation Studio Modal (Standalone Edition) -->

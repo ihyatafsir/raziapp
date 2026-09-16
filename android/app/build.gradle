@@ -11,8 +11,8 @@ android {
         applicationId "com.ihyatafsir.raziapp"
         minSdk 24
         targetSdk 36
-        versionCode 239
-        versionName "2.3.9"
+        versionCode 240
+        versionName "2.4.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -53,6 +53,10 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+    aaptOptions {
+        noCompress 'epub', 'json'
+    }
+
     sourceSets {
         main {
             assets.srcDirs = ['src/main/assets']

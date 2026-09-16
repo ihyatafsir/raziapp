@@ -91,23 +91,14 @@ async function getOfflineStore() {
   return Object.keys(customStore).length > 0 ? customStore : null;
 }
 
-function updateServerStatus(online, label = '') {
-  const dot = document.getElementById('server-status-dot');
-  if (dot) {
-    dot.className = `status-indicator-dot ${online ? 'online' : 'offline'}`;
-  }
-}
+function updateServerStatus(online, label = '') {}
 
 window.handleAndroidBack = function() {
   if (state.isEpubMode) {
     exitEpubMode();
     return true;
   }
-  const modalServer = document.getElementById('modal-server');
-  if (modalServer && modalServer.classList.contains('active')) {
-    modalServer.classList.remove('active');
-    return true;
-  }
+
   const searchModal = document.getElementById('modal-search') || document.getElementById('search-modal');
   if (searchModal && (searchModal.classList.contains('active') || !searchModal.classList.contains('hidden'))) {
     searchModal.classList.remove('active');
@@ -489,75 +480,7 @@ function initEventListeners() {
   document.getElementById('btn-close-search')?.addEventListener('click', closeSearchModal);
   document.getElementById('mb-btn-search')?.addEventListener('click', openSearchModal);
   
-  // Server Settings Modal Listeners
-  const modalServer = document.getElementById('modal-server');
-  const serverInput = document.getElementById('server-url-input');
-  const serverTestOut = document.getElementById('server-test-output');
-
-  function openServerModal() {
-    if (modalServer) {
-      modalServer.classList.add('active');
-      if (serverInput) {
-        serverInput.value = localStorage.getItem('raziapp_api_base') || (window.AndroidBridge?.getApiBase ? window.AndroidBridge.getApiBase() : 'http://10.20.102.177:5200');
-      }
-    }
-  }
-
-  function closeServerModal() {
-    if (modalServer) modalServer.classList.remove('active');
-  }
-
-  document.getElementById('btn-open-server-modal')?.addEventListener('click', openServerModal);
-  document.getElementById('btn-close-server')?.addEventListener('click', closeServerModal);
-
-  document.getElementById('btn-preset-lan')?.addEventListener('click', () => {
-    if (serverInput) serverInput.value = 'http://10.20.102.177:5200';
-  });
-  document.getElementById('btn-preset-local')?.addEventListener('click', () => {
-    if (serverInput) serverInput.value = 'http://127.0.0.1:5200';
-  });
-  document.getElementById('btn-preset-offline')?.addEventListener('click', () => {
-    if (serverInput) serverInput.value = '';
-    if (serverTestOut) serverTestOut.textContent = 'Standalone mode selected (using bundled 193-volume offline store)';
-  });
-
-  document.getElementById('btn-test-connection')?.addEventListener('click', async () => {
-    const url = (serverInput?.value || '').trim().replace(/\/+$/, '');
-    if (!url) {
-      if (serverTestOut) serverTestOut.textContent = 'Offline standalone mode active (no server needed).';
-      return;
-    }
-    if (serverTestOut) serverTestOut.textContent = 'Testing link to ' + url + '...';
-    try {
-      const t0 = performance.now();
-      const res = await fetchWithTimeout(url + '/api/health', {}, 2500);
-      const ms = Math.round(performance.now() - t0);
-      if (res.ok) {
-        const d = await res.json();
-        if (serverTestOut) {
-          serverTestOut.innerHTML = `<span style="color: var(--brand-emerald); font-weight: 700;">Online (${ms}ms)</span> - ${d.total_books} classical masterworks available.`;
-        }
-        updateServerStatus(true, 'Online');
-      } else {
-        if (serverTestOut) serverTestOut.innerHTML = `<span style="color: #ef4444;">Server error (HTTP ${res.status})</span>`;
-        updateServerStatus(false, 'Error');
-      }
-    } catch (e) {
-      if (serverTestOut) serverTestOut.innerHTML = `<span style="color: #ef4444;">Unreachable</span> (${e.message || 'connection failed'})`;
-      updateServerStatus(false, 'Offline');
-    }
-  });
-
-  document.getElementById('btn-save-connection')?.addEventListener('click', async () => {
-    const url = (serverInput?.value || '').trim().replace(/\/+$/, '');
-    localStorage.setItem('raziapp_api_base', url);
-    if (window.AndroidBridge && typeof window.AndroidBridge.setApiBase === 'function') {
-      try { window.AndroidBridge.setApiBase(url); } catch (_) {}
-    }
-    closeServerModal();
-    showToast(url ? `Connected to ${url}` : 'Switched to Standalone Offline Mode');
-    await loadLibrary();
-  });
+// Standalone Mode: Zero external server dependencies
 
   
   let searchDebounce = null;
@@ -1177,7 +1100,7 @@ function closeAllDrawers() {
   document.getElementById('modal-library')?.classList.remove('active');
   document.getElementById('modal-search')?.classList.remove('active');
   document.getElementById('modal-translation-studio')?.classList.remove('active');
-  document.getElementById('modal-server')?.classList.remove('active');
+  
   updateBackdrop();
 }
 
@@ -1714,16 +1637,7 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
       }
     }
 
-    // 1. Try Pure Client-Side EPUB Engine (Primary Standalone Path)
-    if (window.clientEpubEngine && window.clientEpubEngine.currentZip) {
-      try {
-        data = await window.clientEpubEngine.getChapter(href);
-      } catch (e) {
-        console.warn('Client engine chapter extract fallback:', e);
-      }
-    }
-
-    // 2. Try Local Offline Store
+    // 1. Try Local Offline Store Fast Path
     if (!data || !data.paragraphs || data.paragraphs.length === 0) {
       const store = await getOfflineStore();
       if (store && store[state.activeBookId]?.chapters?.[href]) {
@@ -1731,14 +1645,19 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
       }
     }
 
-    // 3. Try Remote API if connected
-    if (!data || !data.paragraphs || data.paragraphs.length === 0) {
+    // 2. Try Pure Client-Side EPUB Engine (Primary Standalone Path)
+    if ((!data || !data.paragraphs || data.paragraphs.length === 0) && window.clientEpubEngine) {
       try {
-        const res = await fetchWithTimeout(getApiUrl(`/api/book/${state.activeBookId}/chapter?href=${encodeURIComponent(href)}`), {}, 1200);
-        if (res.ok) {
-          data = await res.json();
+        if (window.clientEpubEngine.currentZip) {
+          data = await window.clientEpubEngine.getChapter(href);
+        } else if (state.activeBook) {
+          const epubUrl = state.activeBook.asset_url || `epubs/${state.activeBook.filename}`;
+          await window.clientEpubEngine.load(epubUrl, state.activeBookId);
+          data = await window.clientEpubEngine.getChapter(href);
         }
-      } catch (_) {}
+      } catch (e) {
+        console.warn('Client engine chapter extract notice:', e);
+      }
     }
 
     if (!data || !data.paragraphs || data.paragraphs.length === 0) {
@@ -3517,36 +3436,8 @@ function initTranslationStudio() {
         const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
         const { systemPrompt, userPrompt } = ragContext;
 
-        // Translation via Cloud LLM with AynEngine Active-RAG Grounding
-        try {
-          const srvRes = await fetchWithTimeout(getApiUrl('/api/translation/translate_chunk'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: arPassage,
-              author: studioSelectedSource?.author || 'Imam Fakhr al-Din al-Razi',
-              book_title_ar: studioSelectedSource?.title_ar || 'كتاب كلاسيكي',
-              book_title_en: studioSelectedSource?.title_en || 'Classical Treatise',
-              target_lang: targetLang,
-              api_key: activeApiKey,
-              provider: aiEngineChoice,
-              base_url: activeEndpoint,
-              model: activeModel
-            })
-          }, 25000);
-          if (srvRes.ok) {
-            const srvJson = await srvRes.json();
-            if (srvJson && srvJson.translation) {
-              translatedText = srvJson.translation;
-              if (srvJson.title_target) sectionTitle = srvJson.title_target;
-            }
-          }
-        } catch (srvErr) {
-          console.warn('Server translate_chunk attempt note:', srvErr);
-        }
-
-        // 2. Try Native Android Bridge (Zero CORS) with client Active-RAG context
-        if (!translatedText && window.AndroidBridge) {
+        // 1. Direct Native Android Bridge (Zero CORS, 100% Standalone) with in-app Quad-Lexical Active-RAG
+        if (window.AndroidBridge) {
           try {
             let resJsonStr = '';
             if (typeof window.AndroidBridge.executeLlmCall === 'function') {

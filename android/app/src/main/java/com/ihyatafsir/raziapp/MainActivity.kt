@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "RaziApp"
     private val PREFS_NAME = "raziapp_prefs"
     private val KEY_API_BASE = "key_api_base"
-    private val DEFAULT_API_BASE = "http://10.20.102.177:5200"
+    private val DEFAULT_API_BASE = ""
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
