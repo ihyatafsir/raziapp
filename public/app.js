@@ -1,3 +1,29 @@
+function resetStudioActionButtons(isNewSource = false) {
+  const startBtn = document.getElementById("btn-studio-start");
+  const openReaderBtn = document.getElementById("btn-studio-open-reader");
+  const shareEpubBtn = document.getElementById("btn-studio-share-epub");
+  const monitorPanel = document.getElementById("studio-monitor-panel");
+
+  if (startBtn) {
+    startBtn.style.display = "flex";
+    startBtn.disabled = false;
+    const savedCount = (window._studioActiveSession && window._studioActiveSession.translatedSections) ? window._studioActiveSession.translatedSections.length : 0;
+    if (savedCount > 0 && !isNewSource) {
+      startBtn.textContent = `Resume AynEngine Translation (${savedCount} sections saved)`;
+    } else {
+      startBtn.textContent = "Start AynEngine Translation";
+    }
+  }
+
+  if (openReaderBtn) openReaderBtn.style.display = "none";
+  if (shareEpubBtn) shareEpubBtn.style.display = "none";
+
+  if (isNewSource && monitorPanel) {
+    monitorPanel.style.display = "none";
+  }
+}
+window.resetStudioActionButtons = resetStudioActionButtons;
+
 /**
  * RaziApp Mobile: Sovereign Dialectical EPUB Reader & Scholarly Arabic Recitation
  * Grounded in Imam Fakhr al-Din al-Razi's 'Jami al-Ulum' & 'Al-Matalib al-Aliyah'
@@ -2479,6 +2505,9 @@ function openTranslationStudio() {
     modal.classList.add('active');
     updateBackdrop();
   }
+  if (!window._studioIsTranslating) {
+    resetStudioActionButtons(false);
+  }
 
   // Sync active AI Provider UI and pre-populate keys
   const savedProvider = localStorage.getItem('raziapp_active_provider') || 'deepseek';
@@ -2499,6 +2528,9 @@ function closeTranslationStudio() {
   if (modal) {
     modal.classList.remove('active');
     updateBackdrop();
+  }
+  if (!window._studioIsTranslating) {
+    resetStudioActionButtons(false);
   }
 }
 
@@ -2972,6 +3004,9 @@ async function loadLocalStudioSources() {
 }
 
 function updateStudioSelectionSummary(customStatus = '') {
+  if (!window._studioIsTranslating) {
+    resetStudioActionButtons(true);
+  }
   const summaryBox = document.getElementById('studio-selection-summary');
   const summaryAr = document.getElementById('summary-ar-title');
   const summaryEn = document.getElementById('summary-en-title');
@@ -3559,6 +3594,7 @@ function initTranslationStudio() {
   let lastLlmError = '';
 
   startBtn?.addEventListener('click', async () => {
+    window._studioIsTranslating = true;
     if (!studioSelectedSource) {
       showToast('Please select a classical work from Corpus, Local Texts, or Paste text first');
       return;
@@ -3935,16 +3971,33 @@ function initTranslationStudio() {
       renderLibraryGrid();
 
       completedBookId = bookId;
-      if (monitorBadge) monitorBadge.textContent = 'Codex Complete';
-      if (monitorFill) monitorFill.style.width = '100%';
-      if (monitorProgress) monitorProgress.textContent = '100%';
+      window._studioIsTranslating = false;
+      if (monitorBadge) monitorBadge.textContent = "Codex Complete";
+      if (monitorFill) monitorFill.style.width = "100%";
+      if (monitorProgress) monitorProgress.textContent = "100%";
       if (monitorPreview) {
-        monitorPreview.innerHTML = `<div style="color: var(--brand-emerald); font-weight: 700; font-size: 0.85rem;">Successfully translated and compiled ${escapeHtml(newBook.title)} (${toc.length} sections)! Ready to read or share.</div>`;
+        monitorPreview.innerHTML = `
+          <div style="color: var(--brand-emerald); font-weight: 700; font-size: 0.85rem; margin-bottom: 6px;">
+            Successfully translated and compiled ${escapeHtml(newBook.title)} (${toc.length} sections)! Ready to read or share.
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+            <button class="version-toggle-btn active" id="btn-preview-read" style="padding: 0.45rem 0.75rem; background: var(--brand-emerald); color: #fff; font-size: 0.78rem; font-weight: 700;">Read in Reader</button>
+            <button class="version-toggle-btn active" id="btn-preview-share" style="padding: 0.45rem 0.75rem; background: rgba(212,175,55,0.15); border: 1px solid var(--brand-gold); color: var(--brand-gold); font-size: 0.78rem; font-weight: 700;">Share EPUB</button>
+            <button class="version-toggle-btn" id="btn-preview-new" style="padding: 0.45rem 0.75rem; font-size: 0.78rem;">Translate Another Work</button>
+          </div>
+        `;
+        document.getElementById("btn-preview-read")?.addEventListener("click", () => openReaderBtn?.click());
+        document.getElementById("btn-preview-share")?.addEventListener("click", () => shareEpubBtn?.click());
+        document.getElementById("btn-preview-new")?.addEventListener("click", () => {
+          resetStudioActionButtons(true);
+          const searchInput = document.getElementById("openiti-search-input");
+          if (searchInput) searchInput.focus();
+        });
       }
 
-      startBtn.style.display = 'none';
-      if (openReaderBtn) openReaderBtn.style.display = 'flex';
-      if (shareEpubBtn) shareEpubBtn.style.display = 'flex';
+      startBtn.style.display = "none";
+      if (openReaderBtn) openReaderBtn.style.display = "flex";
+      if (shareEpubBtn) shareEpubBtn.style.display = "flex";
 
       if (window.AndroidBridge && typeof window.AndroidBridge.vibrate === 'function') {
         try { window.AndroidBridge.vibrate(25); } catch (_) {}
@@ -3954,6 +4007,7 @@ function initTranslationStudio() {
       showToast('AynEngine codex compiled on-device! Added to library.');
 
     } catch (err) {
+      window._studioIsTranslating = false;
       console.error('Translation error:', err);
       startBtn.disabled = false;
       const savedCount = (window._studioActiveSession && window._studioActiveSession.translatedSections) ? window._studioActiveSession.translatedSections.length : 0;
@@ -3969,8 +4023,10 @@ function initTranslationStudio() {
 
   // Open in Reader Button
   openReaderBtn?.addEventListener('click', async () => {
+    const bookIdToOpen = completedBookId;
     closeTranslationStudio();
-    if (completedBookId && window.selectBook) {
+    resetStudioActionButtons(true);
+    if (bookIdToOpen && window.selectBook) {
       await window.selectBook(completedBookId);
       showToast('Opened translated codex in reader');
     }
