@@ -94,32 +94,60 @@ async function getOfflineStore() {
 function updateServerStatus(online, label = '') {}
 
 window.handleAndroidBack = function() {
+  // 1. Fullscreen Paginated EPUB Mode
   if (state.isEpubMode) {
     exitEpubMode();
     return true;
   }
 
-  const searchModal = document.getElementById('modal-search') || document.getElementById('search-modal');
-  if (searchModal && (searchModal.classList.contains('active') || !searchModal.classList.contains('hidden'))) {
-    searchModal.classList.remove('active');
-    searchModal.classList.add('hidden');
+  // 2. Typography Panel
+  if (state.isTypographyOpen) {
+    closeTypographyPanel();
     return true;
   }
-  const libraryModal = document.getElementById('modal-library') || document.getElementById('library-modal');
-  if (libraryModal && (libraryModal.classList.contains('active') || !libraryModal.classList.contains('hidden'))) {
+
+  // 3. Translation Studio Modal
+  const studioModal = document.getElementById('modal-translation-studio');
+  if (studioModal && studioModal.classList.contains('active')) {
+    closeTranslationStudio();
+    return true;
+  }
+
+  // 4. In-Book Search Modal
+  const searchModal = document.getElementById('modal-search');
+  if (searchModal && searchModal.classList.contains('active')) {
+    closeSearchModal();
+    return true;
+  }
+
+  // 5. Library / Arkan Modal
+  const libraryModal = document.getElementById('modal-library');
+  if (libraryModal && libraryModal.classList.contains('active')) {
     closeLibraryModal();
     return true;
   }
-  const tocDrawer = document.getElementById('toc-drawer');
-  if (tocDrawer && tocDrawer.classList.contains('open')) {
+
+  // 6. TOC Sidebar Drawer
+  const tocSidebar = document.getElementById('sidebar-toc') || document.getElementById('drawer-toc');
+  if (tocSidebar && tocSidebar.classList.contains('open')) {
     closeTocSidebar();
     return true;
   }
+
+  // 7. Al-Muhaqqiq AI Companion Drawer
   const aiDrawer = document.getElementById('ai-drawer');
   if (aiDrawer && aiDrawer.classList.contains('open')) {
     closeAiDrawer();
     return true;
   }
+
+  // 8. If reader is active, return to Library
+  const readerView = document.getElementById('view-reader');
+  if (readerView && readerView.style.display !== 'none' && state.activeBook) {
+    openLibraryModal();
+    return true;
+  }
+
   return false;
 };
 
