@@ -2883,33 +2883,49 @@ async function resolveArabicManuscriptText(source) {
   async function fetchFromUrl(url) {
     if (!url) return "";
 
-    // 1. Build heuristic candidate URL variations
-    const urlsToTry = [url];
-    if (url.includes(".mARkdown")) {
-      urlsToTry.push(url.replace(/\.mARkdown$/, ""));
+    // 0. Resolve Canonical OpenITI 25-Year Repository Bucket
+    let canonicalUrl = url;
+    const repoMatch = url.match(/https:\/\/raw\.githubusercontent\.com\/OpenITI\/(\d{4}AH)\/master\/data\/(\d{4})([^\/]+)\//);
+    if (repoMatch) {
+      const currentRepo = repoMatch[1];
+      const authorDate = parseInt(repoMatch[2], 10);
+      const correctBucket = authorDate > 0 ? Math.floor((authorDate - 1) / 25) * 25 + 25 : 25;
+      const correctRepo = String(correctBucket).padStart(4, "0") + "AH";
+      if (currentRepo !== correctRepo) {
+        canonicalUrl = url.replace(`OpenITI/${currentRepo}/`, `OpenITI/${correctRepo}/`);
+      }
+    }
+
+    // 1. Build prioritized candidate list with canonical URL at top
+    const urlsToTry = [canonicalUrl];
+    if (canonicalUrl.includes(".mARkdown")) {
+      urlsToTry.push(canonicalUrl.replace(/\.mARkdown$/, ""));
     } else {
-      urlsToTry.push(url + ".mARkdown");
+      urlsToTry.push(canonicalUrl + ".mARkdown");
     }
-    if (url.includes(".completed")) {
-      urlsToTry.push(url.replace(/\.completed$/, ""));
+    if (canonicalUrl.includes(".completed")) {
+      urlsToTry.push(canonicalUrl.replace(/\.completed$/, ""));
     } else {
-      urlsToTry.push(url + ".completed");
+      urlsToTry.push(canonicalUrl + ".completed");
     }
-    if (url.includes("-ara1")) {
-      urlsToTry.push(url.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara2$1"));
-      urlsToTry.push(url.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara2.mARkdown"));
-      urlsToTry.push(url.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara1.mARkdown"));
-    } else if (url.includes("-ara2")) {
-      urlsToTry.push(url.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara1$1"));
-      urlsToTry.push(url.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara1.mARkdown"));
-      urlsToTry.push(url.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara2.mARkdown"));
+    if (canonicalUrl.includes("-ara1")) {
+      urlsToTry.push(canonicalUrl.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara2$1"));
+      urlsToTry.push(canonicalUrl.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara2.mARkdown"));
+      urlsToTry.push(canonicalUrl.replace(/-ara1(\.[a-zA-Z]+)?$/, "-ara1.mARkdown"));
+    } else if (canonicalUrl.includes("-ara2")) {
+      urlsToTry.push(canonicalUrl.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara1$1"));
+      urlsToTry.push(canonicalUrl.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara1.mARkdown"));
+      urlsToTry.push(canonicalUrl.replace(/-ara2(\.[a-zA-Z]+)?$/, "-ara2.mARkdown"));
     }
-    if (url.includes("QawaidCaqaid")) {
-      urlsToTry.push(url.replace(/QawaidCaqaid/g, "QawacidCaqaid"));
-      urlsToTry.push(url.replace(/QawaidCaqaid/g, "QawacidCaqaid") + ".mARkdown");
+    if (canonicalUrl.includes("QawaidCaqaid")) {
+      urlsToTry.push(canonicalUrl.replace(/QawaidCaqaid/g, "QawacidCaqaid"));
+      urlsToTry.push(canonicalUrl.replace(/QawaidCaqaid/g, "QawacidCaqaid") + ".mARkdown");
     }
-    if (url.includes("QawacidCaqaid")) {
-      urlsToTry.push(url.replace(/QawacidCaqaid/g, "QawaidCaqaid"));
+    if (canonicalUrl.includes("QawacidCaqaid")) {
+      urlsToTry.push(canonicalUrl.replace(/QawacidCaqaid/g, "QawaidCaqaid"));
+    }
+    if (url !== canonicalUrl) {
+      urlsToTry.push(url);
     }
 
     const candidateList = Array.from(new Set(urlsToTry));
@@ -2921,13 +2937,13 @@ async function resolveArabicManuscriptText(source) {
       }
       if (!rawText || rawText.length < 50) {
         try {
-          const resp = await fetch(targetUrl);
+          const resp = await fetchWithTimeout(targetUrl, {}, 3500);
           if (resp.ok) rawText = await resp.text();
         } catch (_) {}
       }
       if (!rawText || rawText.length < 50) {
         try {
-          const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(targetUrl)}`));
+          const apiResp = await fetchWithTimeout(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(targetUrl)}`), {}, 2000);
           if (apiResp.ok) {
             const apiJson = await apiResp.json();
             rawText = apiJson.preview || "";
@@ -2937,7 +2953,7 @@ async function resolveArabicManuscriptText(source) {
       return rawText;
     }
 
-    // Try heuristic list first
+    // Try prioritized candidate list
     for (const cand of candidateList) {
       const text = await attemptDownload(cand);
       if (text && text.length > 50 && !text.includes("404: Not Found")) {
@@ -2951,7 +2967,8 @@ async function resolveArabicManuscriptText(source) {
 
     // 2. Dynamic GitHub Folder Discovery if heuristics 404
     try {
-      const ghMatch = url.match(/https:\/\/raw\.githubusercontent\.com\/OpenITI\/([^\/]+)\/master\/(.+)\/[^\/]+$/);
+      const targetForGh = canonicalUrl || url;
+      const ghMatch = targetForGh.match(/https:\/\/raw\.githubusercontent\.com\/OpenITI\/([^\/]+)\/master\/(.+)\/[^\/]+$/);
       if (ghMatch) {
         const repo = ghMatch[1];
         const folder = ghMatch[2];
@@ -2964,8 +2981,8 @@ async function resolveArabicManuscriptText(source) {
           } catch (_) {}
         }
         if (!ghItems) {
-          const ghRes = await fetch(ghApiUrl, { headers: { "User-Agent": "RaziApp/2.4" } });
-          if (ghRes.ok) ghItems = await ghRes.json();
+          const ghRes = await fetchWithTimeout(ghApiUrl, { headers: { "User-Agent": "RaziApp/2.4" } }, 3500);
+          if (ghRes && ghRes.ok) ghItems = await ghRes.json();
         }
         if (Array.isArray(ghItems)) {
           const araFiles = ghItems.filter(f => f.name && f.name.includes("-ara") && !f.name.endsWith(".yml"));

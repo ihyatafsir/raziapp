@@ -202,42 +202,55 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun fetchUrl(urlStr: String): String {
             val callThread = java.util.concurrent.Executors.newSingleThreadExecutor()
-            val future = callThread.submit(java.util.concurrent.Callable<String> {
-                try {
-                    var currentUrl = urlStr.trim()
-                    var redirects = 0
-                    while (redirects < 5) {
-                        val url = java.net.URL(currentUrl)
-                        val conn = url.openConnection() as java.net.HttpURLConnection
-                        conn.instanceFollowRedirects = true
-                        conn.requestMethod = "GET"
-                        conn.setRequestProperty("User-Agent", "RaziApp-AynStudio/2.4")
-                        conn.connectTimeout = 15000
-                        conn.readTimeout = 30000
-                        val code = conn.responseCode
-                        if (code in 300..399) {
-                            val loc = conn.getHeaderField("Location")
-                            if (!loc.isNullOrBlank()) {
-                                currentUrl = loc
-                                redirects++
-                                continue
+            return try {
+                val future = callThread.submit(java.util.concurrent.Callable<String> {
+                    try {
+                        var currentUrl = urlStr.trim()
+                        val openItiRegex = Regex("""OpenITI/(\\d{4}AH)/master/data/(\\d{4})([^/]+)/""")
+                        val m = openItiRegex.find(currentUrl)
+                        if (m != null) {
+                            val currentRepo = m.groupValues[1]
+                            val authorDate = m.groupValues[2].toIntOrNull() ?: 1
+                            val correctBucket = if (authorDate > 0) ((authorDate - 1) / 25 + 1) * 25 else 25
+                            val correctRepo = String.format("%04dAH", correctBucket)
+                            if (currentRepo != correctRepo) {
+                                currentUrl = currentUrl.replace("OpenITI/$currentRepo/", "OpenITI/$correctRepo/")
                             }
                         }
-                        return@Callable if (code in 200..299) {
-                            conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                        } else {
-                            ""
+                        var redirects = 0
+                        while (redirects < 5) {
+                            val url = java.net.URL(currentUrl)
+                            val conn = url.openConnection() as java.net.HttpURLConnection
+                            conn.instanceFollowRedirects = true
+                            conn.requestMethod = "GET"
+                            conn.setRequestProperty("User-Agent", "RaziApp-AynStudio/2.4")
+                            conn.connectTimeout = 6000
+                            conn.readTimeout = 10000
+                            val code = conn.responseCode
+                            if (code in 300..399) {
+                                val loc = conn.getHeaderField("Location")
+                                if (!loc.isNullOrBlank()) {
+                                    currentUrl = loc
+                                    redirects++
+                                    continue
+                                }
+                            }
+                            return@Callable if (code in 200..299) {
+                                conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                            } else {
+                                ""
+                            }
                         }
+                        ""
+                    } catch (e: Exception) {
+                        ""
                     }
-                    ""
-                } catch (e: Exception) {
-                    ""
-                }
-            })
-            return try {
-                future.get(35, java.util.concurrent.TimeUnit.SECONDS)
+                })
+                future.get(12, java.util.concurrent.TimeUnit.SECONDS)
             } catch (e: Exception) {
                 ""
+            } finally {
+                callThread.shutdown()
             }
         }
 
