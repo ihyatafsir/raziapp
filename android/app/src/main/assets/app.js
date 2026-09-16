@@ -2862,31 +2862,45 @@ async function resolveArabicManuscriptText(source) {
     console.warn('Embedded text lookup notice:', e);
   }
 
-  // Helper to fetch and clean from URL
+  // Helper to fetch and clean from URL with smart transliteration mutators
   async function fetchFromUrl(url) {
     if (!url) return '';
-    let text = '';
-    if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === 'function') {
-      try { text = window.AndroidBridge.fetchUrl(url); } catch (_) {}
+
+    const urlsToTry = [url];
+    if (url.includes("QawaidCaqaid")) {
+      urlsToTry.push(url.replace(/QawaidCaqaid/g, "QawacidCaqaid"));
     }
-    if (!text || text.length < 50) {
-      try {
-        const resp = await fetch(url);
-        if (resp.ok) text = await resp.text();
-      } catch (_) {}
+    if (url.includes("QawacidCaqaid")) {
+      urlsToTry.push(url.replace(/QawacidCaqaid/g, "QawaidCaqaid"));
     }
-    if (!text || text.length < 50) {
-      try {
-        const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(url)}`));
-        if (apiResp.ok) {
-          const apiJson = await apiResp.json();
-          text = apiJson.preview || '';
-        }
-      } catch (_) {}
+    if (url.includes("-ara1") && !url.includes(".completed")) {
+      urlsToTry.push(url + ".completed");
     }
-    if (text && text.length > 50) {
-      const cleaned = cleanOpenItiManuscript(text);
-      if (cleaned.length > 50) return cleaned;
+
+    for (const candidateUrl of urlsToTry) {
+      let text = '';
+      if (window.AndroidBridge && typeof window.AndroidBridge.fetchUrl === 'function') {
+        try { text = window.AndroidBridge.fetchUrl(candidateUrl); } catch (_) {}
+      }
+      if (!text || text.length < 50) {
+        try {
+          const resp = await fetch(candidateUrl);
+          if (resp.ok) text = await resp.text();
+        } catch (_) {}
+      }
+      if (!text || text.length < 50) {
+        try {
+          const apiResp = await fetch(getApiUrl(`/api/translation/openiti/preview?url=${encodeURIComponent(candidateUrl)}`));
+          if (apiResp.ok) {
+            const apiJson = await apiResp.json();
+            text = apiJson.preview || '';
+          }
+        } catch (_) {}
+      }
+      if (text && text.length > 50) {
+        const cleaned = cleanOpenItiManuscript(text);
+        if (cleaned.length > 50) return cleaned;
+      }
     }
     return '';
   }
