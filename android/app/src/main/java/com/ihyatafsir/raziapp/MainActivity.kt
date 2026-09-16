@@ -269,8 +269,8 @@ class MainActivity : AppCompatActivity() {
                     if (activeKey.isNotBlank()) {
                         conn.setRequestProperty("Authorization", "Bearer $activeKey")
                     }
-                    conn.connectTimeout = 15000
-                    conn.readTimeout = 60000
+                    conn.connectTimeout = 30000
+                    conn.readTimeout = 120000
                     conn.doOutput = true
 
                     val jsonBody = org.json.JSONObject().apply {
@@ -321,7 +321,7 @@ class MainActivity : AppCompatActivity() {
             })
 
             return try {
-                future.get(65, java.util.concurrent.TimeUnit.SECONDS)
+                future.get(130, java.util.concurrent.TimeUnit.SECONDS)
             } catch (e: Exception) {
                 org.json.JSONObject().apply {
                     put("success", false)

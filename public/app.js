@@ -3614,85 +3614,167 @@ function initTranslationStudio() {
         }
       }
 
-      // 3. Segment text into sections
+      // 3. Segment text into balanced, scholarly discourse sections
+      function coalesceArabicSections(paragraphs, targetMin = 800, targetMax = 2600) {
+        const atomicBlocks = [];
+        for (const p of paragraphs) {
+          if (p.length > targetMax) {
+            const sentences = p.split(/([.،؛؟\n]+)/);
+            let sub = "";
+            for (let s = 0; s < sentences.length; s += 2) {
+              const sentence = (sentences[s] || "") + (sentences[s + 1] || "");
+              if ((sub + sentence).length > targetMax && sub.length >= targetMin) {
+                atomicBlocks.push(sub.trim());
+                sub = sentence;
+              } else {
+                sub += sentence;
+              }
+            }
+            if (sub.trim()) atomicBlocks.push(sub.trim());
+          } else {
+            atomicBlocks.push(p);
+          }
+        }
+
+        const chunks = [];
+        let current = "";
+        for (const block of atomicBlocks) {
+          if (!current) {
+            current = block;
+          } else if ((current + "\n\n" + block).length <= targetMax) {
+            current += "\n\n" + block;
+          } else {
+            chunks.push(current);
+            current = block;
+          }
+        }
+        if (current) {
+          if (chunks.length > 0 && current.length < targetMin && (chunks[chunks.length - 1] + "\n\n" + current).length <= (targetMax + 600)) {
+            chunks[chunks.length - 1] += "\n\n" + current;
+          } else {
+            chunks.push(current);
+          }
+        }
+        return chunks;
+      }
+
       const rawParagraphs = arabicText.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
-      const maxSections = chunkLimit > 0 ? Math.min(chunkLimit, rawParagraphs.length) : rawParagraphs.length;
-      const sectionsToTranslate = rawParagraphs.slice(0, Math.max(1, maxSections));
+      const balancedSections = coalesceArabicSections(rawParagraphs);
+      const maxSections = chunkLimit > 0 ? Math.min(chunkLimit, balancedSections.length) : balancedSections.length;
+      const sectionsToTranslate = balancedSections.slice(0, Math.max(1, maxSections));
 
-      if (monitorBadge) monitorBadge.textContent = 'Translating Sections';
-      if (monitorFill) monitorFill.style.width = '45%';
-      if (monitorProgress) monitorProgress.textContent = '45%';
+      // Session checkpoint to allow resuming interrupted jobs without restarting from section 1
+      const sessionKey = `${studioSelectedSource.identifier || "raw"}_${targetLang}_${editionMode}_${maxSections}`;
+      if (!window._studioActiveSession || window._studioActiveSession.key !== sessionKey) {
+        window._studioActiveSession = {
+          key: sessionKey,
+          translatedSections: []
+        };
+      }
+      const currentSession = window._studioActiveSession;
+      const startIdx = currentSession.translatedSections.length;
 
-      const translatedSections = [];
-      const activeModel = document.getElementById('studio-ai-model')?.value || currentProviderCfg.defaultModel;
-      const activeEndpoint = currentProviderCfg.endpoint || 'https://api.deepseek.com/chat/completions';
-      const langName = targetLang === 'sq' ? 'Albanian (Shqip)' : targetLang === 'de' ? 'German (Deutsch)' : targetLang === 'tr' ? 'Turkish (Türkçe)' : targetLang === 'fr' ? 'French' : 'English';
+      if (monitorBadge) {
+        monitorBadge.textContent = startIdx > 0 ? `Resuming from Section ${startIdx + 1} of ${sectionsToTranslate.length}` : "Translating Sections";
+      }
+      const initialPct = Math.round(45 + (startIdx / sectionsToTranslate.length) * 35);
+      if (monitorFill) monitorFill.style.width = `${initialPct}%`;
+      if (monitorProgress) monitorProgress.textContent = `${initialPct}%`;
 
-      for (let i = 0; i < sectionsToTranslate.length; i++) {
+      const activeModel = document.getElementById("studio-ai-model")?.value || currentProviderCfg.defaultModel;
+      const activeEndpoint = currentProviderCfg.endpoint || "https://api.deepseek.com/chat/completions";
+      const langName = targetLang === "sq" ? "Albanian (Shqip)" : targetLang === "de" ? "German (Deutsch)" : targetLang === "tr" ? "Turkish (Türkçe)" : targetLang === "fr" ? "French" : "English";
+
+      const translationStartTime = Date.now();
+      for (let i = startIdx; i < sectionsToTranslate.length; i++) {
         const arPassage = sectionsToTranslate[i];
-        let translatedText = '';
+        let translatedText = "";
         let sectionTitle = `Section ${i + 1}: Epistemic Dialectic`;
+        let lastLlmError = "";
 
-        if (monitorBadge) monitorBadge.textContent = `Translating Section ${i + 1} of ${sectionsToTranslate.length}`;
+        const completedCount = i - startIdx;
+        const elapsedSec = Math.round((Date.now() - translationStartTime) / 1000);
+        const avgSec = completedCount > 0 ? elapsedSec / completedCount : 8;
+        const remainSec = Math.round((sectionsToTranslate.length - i) * avgSec);
+        const etaLabel = remainSec > 60 ? `~${Math.ceil(remainSec / 60)}m left` : `~${remainSec}s left`;
+
+        if (monitorBadge) monitorBadge.textContent = `Section ${i + 1} of ${sectionsToTranslate.length} (${etaLabel})`;
         if (monitorPreview) monitorPreview.innerHTML = `<em>${escapeHtml(arPassage.substring(0, 140))}...</em>`;
 
         // Build authentic Active-RAG prompt grounded in Quad-Lexicon and Sibawayh
         const ragContext = buildActiveRagPromptContext(arPassage, ragBundle, targetLang, studioSelectedSource);
         const { systemPrompt, userPrompt } = ragContext;
 
-        // 1. Direct Native Android Bridge (Zero CORS, 100% Standalone) with in-app Quad-Lexical Active-RAG
-        if (window.AndroidBridge) {
-          try {
-            let resJsonStr = '';
-            if (typeof window.AndroidBridge.executeLlmCall === 'function') {
-              resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, userPrompt, activeApiKey, activeModel, activeEndpoint);
-            } else if (typeof window.AndroidBridge.executeDeepSeekCall === 'function') {
-              resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, activeModel);
+        // Execute with automatic retry on transient network timeout (up to 3 attempts per section)
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          lastLlmError = "";
+
+          // 1. Direct Native Android Bridge (Zero CORS, 100% Standalone)
+          if (window.AndroidBridge) {
+            try {
+              let resJsonStr = "";
+              if (typeof window.AndroidBridge.executeLlmCall === "function") {
+                resJsonStr = window.AndroidBridge.executeLlmCall(systemPrompt, userPrompt, activeApiKey, activeModel, activeEndpoint);
+              } else if (typeof window.AndroidBridge.executeDeepSeekCall === "function") {
+                resJsonStr = window.AndroidBridge.executeDeepSeekCall(systemPrompt, userPrompt, activeApiKey, activeModel);
+              }
+              const resJson = JSON.parse(resJsonStr || "{}");
+              if (resJson.success && resJson.content) {
+                translatedText = resJson.content;
+              } else if (resJson.error) {
+                lastLlmError = resJson.error;
+                console.warn(`AndroidBridge LLM attempt ${attempt} notice:`, resJson.error);
+              }
+            } catch (err) {
+              console.warn(`Native LLM bridge attempt ${attempt} error:`, err);
             }
-            const resJson = JSON.parse(resJsonStr || '{}');
-            if (resJson.success && resJson.content) {
-              translatedText = resJson.content;
-            } else if (resJson.error) {
-              lastLlmError = resJson.error;
-              console.warn('AndroidBridge LLM call notice:', resJson.error);
-            }
-          } catch (err) {
-            console.warn('Native LLM bridge call error:', err);
           }
-        }
 
-        // 3. Try direct client Web fetch with client Active-RAG context
-        if (!translatedText) {
-          try {
-            const fetchRes = await fetchWithTimeout(activeEndpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${activeApiKey}`
-              },
-              body: JSON.stringify({
-                model: activeModel,
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: userPrompt }
-                ],
-                temperature: 0.1,
-                max_tokens: 4096
-              })
-            }, 25000);
+          // 2. Direct client Web fetch fallback (90s timeout)
+          if (!translatedText) {
+            try {
+              const fetchRes = await fetchWithTimeout(activeEndpoint, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${activeApiKey}`
+                },
+                body: JSON.stringify({
+                  model: activeModel,
+                  messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                  ],
+                  temperature: 0.1,
+                  max_tokens: 4096
+                })
+              }, 90000);
 
-            if (fetchRes.ok) {
-              const fetchJson = await fetchRes.json();
-              translatedText = fetchJson.choices?.[0]?.message?.content || '';
+              if (fetchRes.ok) {
+                const fetchJson = await fetchRes.json();
+                translatedText = fetchJson.choices?.[0]?.message?.content || "";
+              } else {
+                const errBody = await fetchRes.text().catch(() => "");
+                lastLlmError = `HTTP ${fetchRes.status}: ${errBody.substring(0, 100)}`;
+              }
+            } catch (fetchErr) {
+              lastLlmError = fetchErr.message || "Network error";
+              console.warn(`Direct web fetch attempt ${attempt} error:`, fetchErr);
             }
-          } catch (fetchErr) {
-            console.warn('Direct web fetch error:', fetchErr);
+          }
+
+          if (translatedText) break;
+
+          // Backoff before retry
+          if (attempt < 3) {
+            if (monitorBadge) monitorBadge.textContent = `Retrying Section ${i + 1} of ${sectionsToTranslate.length} (Attempt ${attempt + 1}/3)...`;
+            await new Promise(r => setTimeout(r, attempt * 2000));
           }
         }
 
         // Cleanly parse out TRANSLATION: and Section Title if structured
-        if (translatedText && translatedText.includes('TRANSLATION:')) {
-          const parts = translatedText.split('TRANSLATION:');
+        if (translatedText && translatedText.includes("TRANSLATION:")) {
+          const parts = translatedText.split("TRANSLATION:");
           const header = parts[0];
           translatedText = parts[1].trim();
 
@@ -3707,7 +3789,8 @@ function initTranslationStudio() {
           throw new Error(errMsg);
         }
 
-        translatedSections.push({
+        // Checkpoint section into session memory
+        currentSession.translatedSections.push({
           index: i + 1,
           title: sectionTitle,
           arabic: arPassage,
@@ -3719,7 +3802,9 @@ function initTranslationStudio() {
         if (monitorProgress) monitorProgress.textContent = `${pct}%`;
       }
 
-      // 4. Build Codex Structure & Chapters
+      const translatedSections = currentSession.translatedSections;
+
+            // 4. Build Codex Structure & Chapters
       if (monitorBadge) monitorBadge.textContent = 'Compiling Standalone EPUB';
       if (monitorFill) monitorFill.style.width = '85%';
       if (monitorProgress) monitorProgress.textContent = '85%';
@@ -3865,12 +3950,18 @@ function initTranslationStudio() {
         try { window.AndroidBridge.vibrate(25); } catch (_) {}
       }
 
+      window._studioActiveSession = null;
       showToast('AynEngine codex compiled on-device! Added to library.');
 
     } catch (err) {
       console.error('Translation error:', err);
       startBtn.disabled = false;
-      startBtn.textContent = 'Retry AynEngine Translation';
+      const savedCount = (window._studioActiveSession && window._studioActiveSession.translatedSections) ? window._studioActiveSession.translatedSections.length : 0;
+      if (savedCount > 0) {
+        startBtn.textContent = `Resume AynEngine Translation (${savedCount} sections saved)`;
+      } else {
+        startBtn.textContent = "Retry AynEngine Translation";
+      }
       if (monitorBadge) monitorBadge.textContent = 'Error';
       showToast(`Error: ${err.message || 'Translation failed'}`);
     }
