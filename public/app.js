@@ -1315,10 +1315,21 @@ async function loadLibrary() {
 
     if (!booksData || booksData.length === 0) throw new Error('Failed to load library catalog');
     
-    // Merge custom books created via AynEngine Studio
+    // Merge custom books created via AynEngine Studio with schema normalization
     try {
       const customBooks = JSON.parse(localStorage.getItem('raziapp_custom_books') || '[]');
       if (Array.isArray(customBooks) && customBooks.length > 0) {
+        customBooks.forEach(b => {
+          if (!b.imam_key) b.imam_key = "studio";
+          if (b.topic_key === "theology_kalam") b.topic_key = "kalam";
+          if (/diwan|شعر|ديوان/i.test((b.title || "") + " " + (b.arabic_title || ""))) {
+            b.topic_key = "lisan";
+            b.topic_name = "Lisan & Classical Poetry";
+            b.topic_arabic = "اللسان والشعر العربي";
+            b.pillar_key = "lisan";
+            b.pillar_name = "Lisan & Classical Lexicon";
+          }
+        });
         const existingIds = new Set(booksData.map(b => b.id));
         const newOnes = customBooks.filter(b => !existingIds.has(b.id));
         booksData = [...newOnes, ...booksData];
@@ -1375,12 +1386,23 @@ function renderLibraryGrid() {
 
   // 3. Filter by Imam / Author
   if (state.activeImam !== 'all') {
-    list = list.filter(b => b.imam_key === state.activeImam || b.author_key === state.activeImam);
+    if (state.activeImam === 'heritage') {
+      list = list.filter(b => b.imam_key === 'heritage' || b.imam_key === 'studio' || b.is_studio || b.author_key === 'heritage');
+    } else if (state.activeImam === 'studio') {
+      list = list.filter(b => b.imam_key === 'studio' || b.is_studio || (b.source && b.source.includes('AynEngine')));
+    } else {
+      list = list.filter(b => b.imam_key === state.activeImam || b.author_key === state.activeImam);
+    }
   }
 
   // 4. Filter by Epistemic Topic
   if (state.activeTopic !== 'all') {
-    list = list.filter(b => b.topic_key === state.activeTopic || b.pillar_key === state.activeTopic);
+    list = list.filter(b => 
+      b.topic_key === state.activeTopic || 
+      b.pillar_key === state.activeTopic ||
+      (state.activeTopic === 'kalam' && b.topic_key === 'theology_kalam') ||
+      (state.activeTopic === 'lisan' && /diwan|شعر|ديوان/i.test((b.title || "") + " " + (b.arabic_title || "")))
+    );
   }
 
   // 5. Filter by Search Query
@@ -1417,34 +1439,51 @@ function renderLibraryGrid() {
   }
 
   // Hierarchical Grouping:
-  // Step 1: Group by Imam
-  const imamOrder = ['razi', 'ghazali', 'nawawi', 'raghib', 'heritage'];
+  // Step 1: Group by Imam (Studio translations at top so custom translations are immediately accessible)
+  const imamOrder = ['studio', 'razi', 'ghazali', 'nawawi', 'raghib', 'heritage'];
   const imamGroups = {};
 
   list.forEach(b => {
-    const ik = b.imam_key || 'heritage';
+    let ik = b.imam_key;
+    if (!ik) {
+      ik = (b.is_studio || (b.source && b.source.includes("AynEngine"))) ? "studio" : "heritage";
+    }
     if (!imamGroups[ik]) imamGroups[ik] = [];
     imamGroups[ik].push(b);
   });
 
-  // Canonical topic order
+  const allImamKeys = Array.from(new Set([...imamOrder, ...Object.keys(imamGroups)]));
   const topicOrder = ['kalam', 'usul', 'tafsir', 'hadith', 'lisan', 'tasawwuf', 'hikmah', 'fiqh'];
 
   let html = '';
 
-  imamOrder.forEach(ik => {
+  allImamKeys.forEach(ik => {
     const imamBooks = imamGroups[ik];
     if (!imamBooks || imamBooks.length === 0) return;
 
-    const firstBook = imamBooks[0];
-    const imamName = firstBook.author || 'Classical Master';
-    const imamArabic = firstBook.author_arabic || '';
-    const era = firstBook.era || '';
-    const honorific = firstBook.honorific || '';
+    let imamName = 'Classical Master';
+    let imamArabic = '';
+    let era = '';
+    let honorific = '';
+    let bannerStyle = '';
+
+    if (ik === 'studio') {
+      imamName = 'AynEngine Studio Translations';
+      imamArabic = 'ترجمات المحراب والديوان الكلاسيكي';
+      era = 'Classical Sovereign Editions';
+      honorific = 'Locally Translated Masterworks';
+      bannerStyle = 'border-left-color: var(--brand-gold); background: rgba(212, 175, 55, 0.08);';
+    } else {
+      const firstBook = imamBooks[0];
+      imamName = firstBook.author || 'Classical Master';
+      imamArabic = firstBook.author_arabic || '';
+      era = firstBook.era || '';
+      honorific = firstBook.honorific || '';
+    }
 
     html += `
       <section class="library-imam-section">
-        <div class="library-imam-banner">
+        <div class="library-imam-banner" ${bannerStyle ? `style="${bannerStyle}"` : ""}>
           <div class="imam-banner-title">${escapeHtml(imamName)}</div>
           ${imamArabic ? `<div class="imam-banner-arabic">${escapeHtml(imamArabic)}</div>` : ''}
           <div class="imam-banner-meta">${escapeHtml(honorific ? honorific + ' • ' : '')}${escapeHtml(era)}</div>
@@ -1454,12 +1493,16 @@ function renderLibraryGrid() {
     // Step 2: Group by Topic inside this Imam
     const topicGroups = {};
     imamBooks.forEach(b => {
-      const tk = b.topic_key || 'kalam';
+      let tk = b.topic_key || 'kalam';
+      if (tk === 'theology_kalam') tk = 'kalam';
+      if (/diwan|شعر|ديوان/i.test((b.title || "") + " " + (b.arabic_title || ""))) tk = 'lisan';
       if (!topicGroups[tk]) topicGroups[tk] = [];
       topicGroups[tk].push(b);
     });
 
-    topicOrder.forEach(tk => {
+    const allTopicKeys = Array.from(new Set([...topicOrder, ...Object.keys(topicGroups)]));
+
+    allTopicKeys.forEach(tk => {
       const booksInTopic = topicGroups[tk];
       if (!booksInTopic || booksInTopic.length === 0) return;
 
@@ -4118,26 +4161,38 @@ Provide ONLY the clean concluding words to complete the sentence properly:`;
         };
       }
 
-      // 5. Package into new Book Record
+      // 5. Package into new Book Record with verified epistemic taxonomy
+      const isPoemOrDiwan = /diwan|شعر|ديوان/i.test(bookTitleEn + " " + bookTitleAr);
+      const canonicalTopic = isPoemOrDiwan ? "lisan" : "kalam";
+      const canonicalTopicName = isPoemOrDiwan ? "Lisan & Classical Poetry" : "Kalam & Dialectics";
+      const canonicalTopicAr = isPoemOrDiwan ? "اللسان والشعر العربي" : "الإلهيات والكلام";
+
       const newBook = {
         id: bookId,
         title: `${bookTitleEn} (${isBilingual ? 'Bilingual Apparatus Edition' : 'Pure Edition'})`,
         arabic_title: bookTitleAr,
         author: author,
         author_key: author.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-        topic_key: 'theology_kalam',
-        topic_name: 'Kalam & Dialectics',
-        pillar_key: 'theology_kalam',
-        pillar_name: 'AynEngine Dialectics',
-        version: 'v5',
-        format: isBilingual ? 'bilingual' : 'pure_en',
+        author_arabic: bookTitleAr || author,
+        imam_key: "studio",
+        topic_key: canonicalTopic,
+        topic_name: canonicalTopicName,
+        topic_arabic: canonicalTopicAr,
+        pillar_key: canonicalTopic,
+        pillar_name: canonicalTopicName,
+        version: "v5",
+        format: isBilingual ? "bilingual" : "pure_en",
         is_v4_v5: true,
         is_bilingual: isBilingual,
         is_pure_en: !isBilingual,
-        is_sq: targetLang === 'sq',
+        is_sq: targetLang === "sq",
         filename: `${bookId}.epub`,
         chapters_count: toc.length,
-        source: 'AynEngine AI v5.1 On-Device'
+        source: "AynEngine AI v5.1 On-Device",
+        is_studio: true,
+        is_heritage_new: true,
+        era: "Classical Translation",
+        honorific: "AynEngine AI Sovereign Translation"
       };
 
       const newOfflineData = {
