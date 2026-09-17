@@ -404,15 +404,15 @@ def download_desktop_windows():
 @app.head("/download/bundle/aab")
 def download_android_aab():
     """Serves the Google Play App Bundle (AAB)."""
-    candidates = [
-        PUBLIC_DIR / "raziapp-v2.4.2.aab",
-        BASE_DIR / "raziapp.aab",
-        BASE_DIR / "android" / "app" / "build" / "outputs" / "bundle" / "release" / "app-release.aab"
+    versioned_aabs = sorted(list(BASE_DIR.glob("raziapp-v*.aab")), key=lambda p: p.stat().st_mtime, reverse=True)
+    candidates = versioned_aabs + [
+        BASE_DIR / "android" / "app" / "build" / "outputs" / "bundle" / "release" / "app-release.aab",
+        BASE_DIR / "raziapp.aab"
     ]
     p = next((c for c in candidates if c.exists()), None)
     if not p:
         raise HTTPException(status_code=404, detail="AAB bundle not found.")
-    return FileResponse(path=str(p), filename="raziapp-v2.4.2.aab", media_type="application/octet-stream")
+    return FileResponse(path=str(p), filename=p.name, media_type="application/octet-stream")
 
 
 # --- Translation Studio Endpoints ---

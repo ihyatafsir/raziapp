@@ -64,6 +64,12 @@ const state = {
   isHudVisible: true,
   isTypographyOpen: false
 };
+window.state = state;
+window.enterEpubMode = enterEpubMode;
+window.exitEpubMode = exitEpubMode;
+window.buildEpubPages = buildEpubPages;
+window.nextEpubPage = nextEpubPage;
+window.prevEpubPage = prevEpubPage;
 
 // --- Android & API Bridge Utilities ---
 function getApiUrl(endpoint) {
@@ -940,20 +946,70 @@ function buildEpubPages(targetPageIndex = 0) {
 
   paragraphs.forEach((p, origIdx) => {
     if (p.is_apparatus || p.type === 'apparatus') {
-      const appContent = escapeHtml(p.apparatus || p.text || '').replace(/\n/g, '<br/>');
-      html += `
-        <article class="paragraph-card is-apparatus-card" id="${p.id || `para-${idx}`}" data-index="${idx}" style="border-left: 3px solid var(--accent-primary); background: rgba(59, 130, 246, 0.04);">
-          <div class="dialectical-badge-row proof">
-            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            <span>Philological & Theological Apparatus</span>
-          </div>
-          <div class="text-content" style="font-size: 0.9em; line-height: 1.6; color: var(--text-secondary); margin-top: 0.5rem;">${appContent}</div>
-        </article>
-      `;
+      const appText = p.apparatus || p.text || '';
+      if (appText.length > enBudget) {
+        const chunks = splitParagraphIntoCleanChunks(appText, enBudget);
+        chunks.forEach((chunk, cIdx) => {
+          preparedItems.push({
+            ...p,
+            is_apparatus: true,
+            text: chunk,
+            isContinuation: cIdx > 0,
+            weight: Math.min(enBudget, Math.max(100, Math.round(chunk.length * 0.75))),
+            originalIndex: origIdx
+          });
+        });
+      } else {
+        preparedItems.push({
+          ...p,
+          is_apparatus: true,
+          text: appText,
+          isContinuation: false,
+          weight: Math.min(enBudget, Math.max(100, Math.round(appText.length * 0.75))),
+          originalIndex: origIdx
+        });
+      }
       return;
     }
 
-    const isArabic = p.is_arabic || Boolean(p.arabic);
+    const hasArabic = Boolean(p.arabic);
+    const hasEnglish = Boolean(p.text) && (!hasArabic || p.text.trim() !== p.arabic.trim());
+
+    if (hasArabic && hasEnglish) {
+      preparedItems.push({
+        ...p,
+        is_arabic: true,
+        text: p.arabic,
+        weight: Math.round(p.arabic.length * (enBudget / arBudget)),
+        originalIndex: origIdx
+      });
+      if (p.text.length > enBudget) {
+        const enChunks = splitParagraphIntoCleanChunks(p.text, enBudget);
+        enChunks.forEach((chunk, cIdx) => {
+          preparedItems.push({
+            ...p,
+            arabic: null,
+            text: chunk,
+            is_arabic: false,
+            isContinuation: cIdx > 0,
+            weight: chunk.length + 20,
+            originalIndex: origIdx
+          });
+        });
+      } else {
+        preparedItems.push({
+          ...p,
+          arabic: null,
+          is_arabic: false,
+          isContinuation: false,
+          weight: p.text.length + 20,
+          originalIndex: origIdx
+        });
+      }
+      return;
+    }
+
+    const isArabic = p.is_arabic || (hasArabic && !hasEnglish);
     const rawText = isArabic ? (p.arabic || p.text || '') : (p.text || '');
 
     if (isArabic) {
@@ -1037,6 +1093,21 @@ function buildEpubPages(targetPageIndex = 0) {
       <div class="epub-page-slide font-${state.fontFamily}" id="epub-slide-${pageIdx}">
         ${pageIdx === 0 ? `<h2 class="page-heading">${escapeHtml(chapterHeading)}</h2>` : ''}
         ${pageGroup.map(item => {
+          if (item.is_apparatus) {
+            const formatted = escapeHtml(item.text || '').replace(/\n/g, '<br/>');
+            const continuationClass = item.isContinuation ? ' page-paragraph-continuation' : '';
+            return `
+              <div class="page-item-block" style="margin: 0.5rem 0; padding: 0.6rem 0.8rem; border-left: 3px solid var(--brand-emerald, #10b981); background: rgba(16, 185, 129, 0.06); border-radius: 4px;">
+                ${!item.isContinuation ? `
+                  <div class="page-badge proof" style="margin-bottom: 0.35rem;">
+                    <span>Philological & Theological Apparatus</span>
+                  </div>
+                ` : ''}
+                <div class="page-paragraph${continuationClass}" style="font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary); font-family: var(--font-ui);">${formatted}</div>
+              </div>
+            `;
+          }
+
           const isArabic = item.is_arabic || Boolean(item.arabic);
           const dialecticType = item.dialectic_type || item.dialectic || 'exposition';
           const tagLabel = getDialecticBadgeLabel(dialecticType);
@@ -1602,7 +1673,7 @@ window.selectBook = async function(bookId) {
   closeLibraryModal();
 
   // For client-generated treatises, clear currentZip and load directly from local offline store
-  if (bookId && bookId.startsWith('ayn_')) {
+  if (bookId && (bookId.startsWith('ayn_') || state.activeBook?.is_studio || state.activeBook?.is_heritage_new)) {
     if (window.clientEpubEngine) {
       window.clientEpubEngine.currentZip = null;
     }
@@ -1644,7 +1715,7 @@ async function loadBookToc(bookId) {
     let tocData = null;
 
     // Fast-path for client-generated treatises (instant local loading)
-    if (bookId && bookId.startsWith('ayn_')) {
+    if (bookId && (bookId.startsWith('ayn_') || state.activeBook?.is_studio || state.activeBook?.is_heritage_new)) {
       const store = await getOfflineStore();
       if (store && store[bookId] && store[bookId].toc) {
         tocData = store[bookId].toc;
@@ -1750,7 +1821,7 @@ window.loadChapter = async function(href, chapterIndex, targetParagraphId = null
     let data = null;
 
     // 0. Fast-path for client-generated treatises
-    if (state.activeBookId && state.activeBookId.startsWith('ayn_')) {
+    if (state.activeBookId && (state.activeBookId.startsWith('ayn_') || state.activeBook?.is_studio || state.activeBook?.is_heritage_new)) {
       const store = await getOfflineStore();
       if (store && store[state.activeBookId]?.chapters?.[href]) {
         data = store[state.activeBookId].chapters[href];
@@ -1848,6 +1919,25 @@ function renderChapterContent(paragraphs) {
 
   let html = '';
   paragraphs.forEach((p, idx) => {
+    if (p.is_apparatus || p.type === 'apparatus') {
+      const appContent = escapeHtml(p.apparatus || p.text || '').replace(/\n/g, '<br/>');
+      html += `
+        <article class="paragraph-card is-apparatus-card" id="${p.id || `para-${idx}`}" data-index="${idx}" style="border-left: 3px solid var(--brand-emerald, #10b981); background: rgba(16, 185, 129, 0.04);">
+          <div class="dialectical-badge-row proof">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>Philological & Theological Apparatus</span>
+          </div>
+          <div class="text-content" style="font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary); margin-top: 0.5rem;">${appContent}</div>
+          <div class="card-actions-bar">
+            <button class="card-action-btn" title="Copy scholarly citation" onclick="event.stopPropagation(); copyParagraphCitation(${idx});">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width: 12px; height: 12px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Cite</span>
+            </button>
+          </div>
+        </article>
+      `;
+      return;
+    }
     const dialecticType = p.dialectic_type || p.dialectic || 'exposition';
     const tagLabel = getDialecticBadgeLabel(dialecticType);
     const textHtml = escapeHtml(p.text || '');
